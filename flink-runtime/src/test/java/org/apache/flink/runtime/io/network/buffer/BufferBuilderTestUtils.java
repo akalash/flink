@@ -90,9 +90,11 @@ public class BufferBuilderTestUtils {
 
     public static BufferConsumer createEventBufferConsumer(int size, Buffer.DataType dataType) {
         return new BufferConsumer(
-                MemorySegmentFactory.allocateUnpooledSegment(size),
-                FreeingBufferRecycler.INSTANCE,
-                dataType);
+                new NetworkBuffer(
+                        MemorySegmentFactory.allocateUnpooledSegment(size),
+                        FreeingBufferRecycler.INSTANCE,
+                        dataType),
+                size);
     }
 
     public static Buffer buildBufferWithAscendingInts(int bufferSize, int numInts, int nextValue) {

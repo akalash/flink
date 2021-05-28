@@ -36,6 +36,7 @@ import static org.apache.flink.util.Preconditions.checkState;
  */
 @NotThreadSafe
 public class BufferBuilder {
+    private final Buffer buffer;
     private final MemorySegment memorySegment;
 
     private final BufferRecycler recycler;
@@ -47,6 +48,7 @@ public class BufferBuilder {
     public BufferBuilder(MemorySegment memorySegment, BufferRecycler recycler) {
         this.memorySegment = checkNotNull(memorySegment);
         this.recycler = checkNotNull(recycler);
+        this.buffer = new NetworkBuffer(memorySegment, recycler);
     }
 
     /**
@@ -74,7 +76,7 @@ public class BufferBuilder {
         checkState(
                 !bufferConsumerCreated, "Two BufferConsumer shouldn't exist for one BufferBuilder");
         bufferConsumerCreated = true;
-        return new BufferConsumer(memorySegment, recycler, positionMarker, currentReaderPosition);
+        return new BufferConsumer(buffer, positionMarker, currentReaderPosition);
     }
 
     /** Same as {@link #append(ByteBuffer)} but additionally {@link #commit()} the appending. */
