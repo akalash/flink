@@ -46,7 +46,7 @@ public abstract class CheckpointBarrierHandler implements Closeable {
     /** The listener to be notified on complete checkpoints. */
     private final AbstractInvokable toNotifyOnCheckpoint;
 
-    private final Clock clock;
+    protected final Clock clock;
 
     /** The time (in nanoseconds) that the latest alignment took. */
     private CompletableFuture<Long> latestAlignmentDurationNanos = new CompletableFuture<>();
