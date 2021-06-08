@@ -213,7 +213,12 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
                 markAlignmentStartAndEnd(barrier.getTimestamp());
             } else {
                 markAlignmentStart(barrier.getTimestamp());
-                markAlignmentEnd(clock.relativeTimeNanos() - firstBarrierArrivalTime);
+                if (firstBarrierArrivalTime < 0) {
+                    markAlignmentEnd(1_000_000 * 667);
+                } else {
+
+                    markAlignmentEnd(clock.relativeTimeNanos() - firstBarrierArrivalTime);
+                }
             }
         }
 
@@ -426,6 +431,7 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
         @Override
         public void triggerGlobalCheckpoint(CheckpointBarrier checkpointBarrier)
                 throws IOException {
+            firstBarrierArrivalTime = -1;
             SingleCheckpointBarrierHandler.this.triggerCheckpoint(checkpointBarrier);
         }
 
@@ -433,6 +439,7 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
         public boolean isTimedOut(CheckpointBarrier barrier) {
             return barrier.getCheckpointOptions().isTimeoutable()
                     && barrier.getId() <= currentCheckpointId
+                    && firstBarrierArrivalTime > 0
                     && barrier.getCheckpointOptions().getAlignmentTimeout() * 1_000_000
                             < (getClock().relativeTimeNanos() - firstBarrierArrivalTime);
         }
