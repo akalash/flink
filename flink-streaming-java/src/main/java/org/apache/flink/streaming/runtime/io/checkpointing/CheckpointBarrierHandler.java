@@ -141,8 +141,8 @@ public abstract class CheckpointBarrierHandler implements Closeable {
     }
 
     protected void markAlignmentStart(long checkpointCreationTimestamp) {
-        latestCheckpointStartDelayNanos =
-                1_000_000 * Math.max(0, clock.absoluteTimeMillis() - checkpointCreationTimestamp);
+        long b = clock.absoluteTimeMillis() - checkpointCreationTimestamp;
+        latestCheckpointStartDelayNanos = 1_000_000 * (b < 0 ? 666666 : b);
 
         resetAlignment();
         startOfAlignmentTimestamp = clock.relativeTimeNanos();
