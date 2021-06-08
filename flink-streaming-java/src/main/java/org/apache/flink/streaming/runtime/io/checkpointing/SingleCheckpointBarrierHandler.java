@@ -83,6 +83,7 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
 
     private BarrierHandlerState currentState;
     private long firstBarrierArrivalTime;
+    private long firstBarrierArrivalTime2;
     private Cancellable currentAlignmentTimer;
     private final boolean alternating;
 
@@ -211,7 +212,7 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             if (getNumOpenChannels() == 1) {
                 markAlignmentStartAndEnd(barrier.getTimestamp());
             } else {
-                markAlignmentStart(barrier.getTimestamp());
+                markAlignmentStart(firstBarrierArrivalTime2);
             }
         }
 
@@ -256,6 +257,7 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             throws IOException {
         if (checkNewCheckpoint(announcedBarrier)) {
             firstBarrierArrivalTime = getClock().relativeTimeNanos();
+            firstBarrierArrivalTime2 = getClock().absoluteTimeMillis();
             if (alternating) {
                 registerAlignmentTimer(announcedBarrier);
             }
