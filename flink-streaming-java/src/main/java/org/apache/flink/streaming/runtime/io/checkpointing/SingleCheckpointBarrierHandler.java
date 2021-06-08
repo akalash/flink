@@ -212,16 +212,15 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             if (getNumOpenChannels() == 1) {
                 markAlignmentStartAndEnd(barrier.getTimestamp());
             } else {
-                markAlignmentStart(firstBarrierArrivalTime2);
+                markAlignmentStart(barrier.getTimestamp());
+                markAlignmentEnd(clock.relativeTimeNanos() - firstBarrierArrivalTime);
             }
         }
 
         // we must mark alignment end before calling currentState.barrierReceived which might
         // trigger a checkpoint with unfinished future for alignment duration
         if (numBarriersReceived == numOpenChannels) {
-            if (getNumOpenChannels() > 1) {
-                markAlignmentEnd();
-            }
+            if (getNumOpenChannels() > 1) {}
         }
 
         try {
