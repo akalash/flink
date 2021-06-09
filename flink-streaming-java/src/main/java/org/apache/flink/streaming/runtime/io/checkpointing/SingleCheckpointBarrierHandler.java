@@ -212,20 +212,30 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             if (getNumOpenChannels() == 1) {
                 markAlignmentStartAndEnd(barrier.getTimestamp());
             } else {
-                markAlignmentStart(barrier.getTimestamp());
                 if (firstBarrierArrivalTime < 0) {
-                    markAlignmentEnd(1_000_000 * 667);
+                    markAlignmentStart(2 * clock.absoluteTimeMillis());
                 } else {
-
-                    markAlignmentEnd(clock.relativeTimeNanos() - firstBarrierArrivalTime);
+                    markAlignmentStart(
+                            clock.absoluteTimeMillis()
+                                    - (clock.relativeTimeNanos() - firstBarrierArrivalTime)
+                                            / 1_000_000);
                 }
+                //                if (firstBarrierArrivalTime < 0) {
+                //                    markAlignmentEnd(1_000_000 * 667);
+                //                } else {
+                //
+                //                    markAlignmentEnd(clock.relativeTimeNanos() -
+                // firstBarrierArrivalTime);
+                //                }
             }
         }
 
         // we must mark alignment end before calling currentState.barrierReceived which might
         // trigger a checkpoint with unfinished future for alignment duration
         if (numBarriersReceived == numOpenChannels) {
-            if (getNumOpenChannels() > 1) {}
+            if (getNumOpenChannels() > 1) {
+                markAlignmentEnd();
+            }
         }
 
         try {
@@ -242,6 +252,7 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             LOG.debug(
                     "{}: Received all barriers for checkpoint {}.", taskName, currentCheckpointId);
             resetAlignmentTimer();
+            firstBarrierArrivalTime = -1;
             allBarriersReceivedFuture.complete(null);
         }
     }
@@ -431,7 +442,6 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
         @Override
         public void triggerGlobalCheckpoint(CheckpointBarrier checkpointBarrier)
                 throws IOException {
-            firstBarrierArrivalTime = -1;
             SingleCheckpointBarrierHandler.this.triggerCheckpoint(checkpointBarrier);
         }
 
