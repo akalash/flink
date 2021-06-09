@@ -212,21 +212,23 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             if (getNumOpenChannels() == 1) {
                 markAlignmentStartAndEnd(barrier.getTimestamp());
             } else {
-                if (firstBarrierArrivalTime < 0) {
-                    markAlignmentStart(2 * clock.absoluteTimeMillis());
-                } else {
-                    markAlignmentStart(
-                            clock.absoluteTimeMillis()
-                                    - (clock.relativeTimeNanos() - firstBarrierArrivalTime)
-                                            / 1_000_000);
-                }
+                markAlignmentStart(barrier.getTimestamp());
                 //                if (firstBarrierArrivalTime < 0) {
-                //                    markAlignmentEnd(1_000_000 * 667);
+                //                    markAlignmentStart(2 * clock.absoluteTimeMillis());
                 //                } else {
-                //
-                //                    markAlignmentEnd(clock.relativeTimeNanos() -
-                // firstBarrierArrivalTime);
+                //                    markAlignmentStart(
+                //                            clock.absoluteTimeMillis()
+                //                                    - (clock.relativeTimeNanos() -
+                // firstBarrierArrivalTime)
+                //                                            / 1_000_000);
                 //                }
+                //                //                if (firstBarrierArrivalTime < 0) {
+                //                //                    markAlignmentEnd(1_000_000 * 667);
+                //                //                } else {
+                //                //
+                //                //                    markAlignmentEnd(clock.relativeTimeNanos() -
+                //                // firstBarrierArrivalTime);
+                //                //                }
             }
         }
 
@@ -252,7 +254,6 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             LOG.debug(
                     "{}: Received all barriers for checkpoint {}.", taskName, currentCheckpointId);
             resetAlignmentTimer();
-            firstBarrierArrivalTime = -1;
             allBarriersReceivedFuture.complete(null);
         }
     }
@@ -271,8 +272,8 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             CheckpointBarrier announcedBarrier, int sequenceNumber, InputChannelInfo channelInfo)
             throws IOException {
         if (checkNewCheckpoint(announcedBarrier)) {
-            firstBarrierArrivalTime = getClock().relativeTimeNanos();
-            firstBarrierArrivalTime2 = getClock().absoluteTimeMillis();
+            //            firstBarrierArrivalTime = getClock().relativeTimeNanos();
+            //            firstBarrierArrivalTime2 = getClock().absoluteTimeMillis();
             if (alternating) {
                 registerAlignmentTimer(announcedBarrier);
             }
@@ -324,6 +325,7 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
             }
             currentCheckpointId = barrierId;
             numBarriersReceived = 0;
+            firstBarrierArrivalTime = getClock().relativeTimeNanos();
             allBarriersReceivedFuture = new CompletableFuture<>();
             return true;
         }
@@ -449,7 +451,6 @@ public class SingleCheckpointBarrierHandler extends CheckpointBarrierHandler {
         public boolean isTimedOut(CheckpointBarrier barrier) {
             return barrier.getCheckpointOptions().isTimeoutable()
                     && barrier.getId() <= currentCheckpointId
-                    && firstBarrierArrivalTime > 0
                     && barrier.getCheckpointOptions().getAlignmentTimeout() * 1_000_000
                             < (getClock().relativeTimeNanos() - firstBarrierArrivalTime);
         }
