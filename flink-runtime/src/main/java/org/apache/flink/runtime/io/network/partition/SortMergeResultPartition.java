@@ -495,4 +495,14 @@ public class SortMergeResultPartition extends ResultPartition {
             return resultFile;
         }
     }
+
+    @Override
+    public List<SubpartitionStatistic> getSubpartitionsStatistics() {
+        ArrayList<SubpartitionStatistic> stats = new ArrayList<>(getNumberOfSubpartitions());
+        for (int i = 0; i < getNumberOfSubpartitions(); i++) {
+            stats.add(new SimpleSubpartitionStatistic());
+        }
+
+        return stats;
+    }
 }
