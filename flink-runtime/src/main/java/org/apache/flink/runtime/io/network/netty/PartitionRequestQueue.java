@@ -185,7 +185,10 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        obtainReader(receiverId).notifyNewBufferSize(newBufferSize);
+        NetworkSequenceViewReader reader = allReaders.get(receiverId);
+        if (reader != null) {
+            reader.notifyNewBufferSize(newBufferSize);
+        }
     }
 
     NetworkSequenceViewReader obtainReader(InputChannelID receiverId) {
