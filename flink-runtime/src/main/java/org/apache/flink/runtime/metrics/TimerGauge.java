@@ -59,6 +59,27 @@ public class TimerGauge implements Gauge<Long>, View {
         }
     }
 
+    /**
+     * Duplicate of {@link #markStart()} with ability passing the time from outside for possible
+     * optimization on calling {@link Clock#absoluteTimeMillis()}.
+     */
+    public synchronized void markStart(long absoluteTimeMillis) {
+        if (currentMeasurementStart == 0) {
+            currentMeasurementStart = absoluteTimeMillis;
+        }
+    }
+
+    /**
+     * Duplicate of {@link #markEnd()} with ability passing the time from outside for possible
+     * optimization on calling {@link Clock#absoluteTimeMillis()}.
+     */
+    public synchronized void markEnd(long absoluteTimeMillis) {
+        if (currentMeasurementStart != 0) {
+            currentCount += absoluteTimeMillis - currentMeasurementStart;
+            currentMeasurementStart = 0;
+        }
+    }
+
     @Override
     public synchronized void update() {
         if (currentMeasurementStart != 0) {
