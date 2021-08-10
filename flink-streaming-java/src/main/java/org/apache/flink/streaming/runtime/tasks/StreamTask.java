@@ -401,6 +401,10 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>> extends Ab
 
         this.bufferDebloatPeriod = taskManagerConf.get(BUFFER_DEBLOAT_PERIOD).toMillis();
 
+        LOG.info(
+                "BufferDEBLOATER :: "
+                        + taskManagerConf.get(TaskManagerOptions.BUFFER_DEBLOAT_ENABLED));
+
         if (taskManagerConf.get(TaskManagerOptions.BUFFER_DEBLOAT_ENABLED)) {
             this.bufferDebloater =
                     new BufferDebloater(taskManagerConf, getEnvironment().getAllInputGates());
