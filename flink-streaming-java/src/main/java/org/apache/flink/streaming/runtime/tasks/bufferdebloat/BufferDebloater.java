@@ -67,6 +67,7 @@ public class BufferDebloater {
     public void recalculateBufferSize(long currentThroughput) {
         long desiredTotalBufferSizeInBytes =
                 (currentThroughput * targetTotalBufferSize.toMillis()) / MILLIS_IN_SECOND;
+        desiredTotalBufferSizeInBytes = (long) (desiredTotalBufferSizeInBytes * 1.5);
 
         int totalNumber = 0;
         for (IndexedInputGate inputGate : inputGates) {
