@@ -67,7 +67,6 @@ public class BufferDebloater {
     public void recalculateBufferSize(long currentThroughput) {
         long desiredTotalBufferSizeInBytes =
                 (currentThroughput * targetTotalBufferSize.toMillis()) / MILLIS_IN_SECOND;
-        desiredTotalBufferSizeInBytes = (long) (desiredTotalBufferSizeInBytes * 1.5);
 
         int totalNumber = 0;
         for (IndexedInputGate inputGate : inputGates) {
@@ -83,6 +82,10 @@ public class BufferDebloater {
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
                         newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));
+
+        if (newSize > lastBufferSize) {
+            newSize += (2 * (newSize - lastBufferSize));
+        }
 
         boolean skipUpdate =
                 Math.abs(1 - ((double) lastBufferSize) / newSize) * 100
