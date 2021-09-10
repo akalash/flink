@@ -67,6 +67,8 @@ class CreditBasedSequenceNumberingViewReader
     /** The number of available buffers for holding data on the consumer side. */
     private int numCreditsAvailable;
 
+    private int cachedBufferSize = -1;
+
     CreditBasedSequenceNumberingViewReader(
             InputChannelID receiverId, int initialCredit, PartitionRequestQueue requestQueue) {
         checkArgument(initialCredit >= 0, "Must be non-negative.");
@@ -90,9 +92,15 @@ class CreditBasedSequenceNumberingViewReader
                 // schedule a separate task at the event loop that will
                 // start consuming this. Otherwise the reference to the
                 // view cannot be available in getNextBuffer().
-                this.subpartitionView =
+                ResultSubpartitionView subpartitionView =
                         partitionProvider.createSubpartitionView(
                                 resultPartitionId, subPartitionIndex, this);
+
+                if (cachedBufferSize > 0) {
+                    subpartitionView.notifyNewBufferSize(cachedBufferSize);
+                }
+
+                this.subpartitionView = subpartitionView;
             } else {
                 throw new IllegalStateException("Subpartition already requested");
             }
@@ -174,6 +182,17 @@ class CreditBasedSequenceNumberingViewReader
 
     @Override
     public void notifyNewBufferSize(int newBufferSize) {
+        ResultSubpartitionView subpartitionView = this.subpartitionView;
+        if (subpartitionView == null) {
+            synchronized (requestLock) {
+                subpartitionView = this.subpartitionView;
+                if (subpartitionView == null) {
+                    cachedBufferSize = newBufferSize;
+                    return;
+                }
+            }
+        }
+
         subpartitionView.notifyNewBufferSize(newBufferSize);
     }
 

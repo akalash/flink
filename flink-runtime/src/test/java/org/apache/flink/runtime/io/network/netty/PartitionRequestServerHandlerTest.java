@@ -23,6 +23,8 @@ import org.apache.flink.runtime.io.network.TaskEventDispatcher;
 import org.apache.flink.runtime.io.network.netty.NettyMessage.ErrorResponse;
 import org.apache.flink.runtime.io.network.netty.NettyMessage.PartitionRequest;
 import org.apache.flink.runtime.io.network.netty.NettyMessage.ResumeConsumption;
+import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
+import org.apache.flink.runtime.io.network.partition.NoOpResultSubpartitionView;
 import org.apache.flink.runtime.io.network.partition.PartitionNotFoundException;
 import org.apache.flink.runtime.io.network.partition.PartitionTestUtils;
 import org.apache.flink.runtime.io.network.partition.ResultPartition;
@@ -30,6 +32,7 @@ import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionManager;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionProvider;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
+import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
 import org.apache.flink.runtime.io.network.partition.consumer.InputChannelID;
 import org.apache.flink.util.TestLogger;
 
@@ -44,6 +47,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -158,6 +162,78 @@ public class PartitionRequestServerHandlerTest extends TestLogger {
         channel.runPendingTasks();
 
         assertEquals(666, testViewReader.bufferSize);
+    }
+
+    @Test
+    public void testReceivingNewBufferSizeBeforeSubpartitionViewWasCreated() {
+        // given: PartitionRequestServerHandler which decline the first PartitionRequest with
+        // PartitionNotFoundException
+        BufferSizeSubpartitionView bufferSizeSubpartitionView = new BufferSizeSubpartitionView();
+        ResultPartitionManager partitionProvider =
+                new ResultPartitionManager() {
+                    @Override
+                    public ResultSubpartitionView createSubpartitionView(
+                            ResultPartitionID partitionId,
+                            int subpartitionIndex,
+                            BufferAvailabilityListener availabilityListener)
+                            throws IOException {
+                        // Call the super to be sure there is no error.
+                        assertNotNull(
+                                super.createSubpartitionView(
+                                        partitionId, subpartitionIndex, availabilityListener));
+                        // Return mock object for validation.
+                        return bufferSizeSubpartitionView;
+                    }
+                };
+
+        final InputChannelID inputChannelID = new InputChannelID();
+        final PartitionRequestQueue partitionRequestQueue = new PartitionRequestQueue();
+        final PartitionRequestServerHandler serverHandler =
+                new PartitionRequestServerHandler(
+                        partitionProvider, new TaskEventDispatcher(), partitionRequestQueue);
+        final EmbeddedChannel channel = new EmbeddedChannel(serverHandler);
+        ResultPartition resultPartition =
+                PartitionTestUtils.createPartition(ResultPartitionType.PIPELINED);
+
+        // when: Sending the first PartitionRequest.
+        channel.writeInbound(
+                new PartitionRequest(resultPartition.getPartitionId(), 0, inputChannelID, 0));
+        channel.runPendingTasks();
+
+        // then: PartitionNotFoundException should be received in response.
+        assertFalse(channel.outboundMessages().toString(), channel.outboundMessages().isEmpty());
+        ErrorResponse errorMsg = (ErrorResponse) channel.outboundMessages().poll();
+
+        assertTrue(errorMsg.cause instanceof PartitionNotFoundException);
+
+        // when: Sending the message of new buffer size to server before the subpartition view was
+        // created.
+        channel.writeInbound(new NettyMessage.NewBufferSize(666, inputChannelID));
+        channel.runPendingTasks();
+
+        // then: No error should happen.
+        assertTrue(channel.outboundMessages().toString(), channel.outboundMessages().isEmpty());
+
+        // when: Sending the second PartitionRequest after the result partition is registered.
+        partitionProvider.registerResultPartition(resultPartition);
+        channel.writeInbound(
+                new PartitionRequest(resultPartition.getPartitionId(), 0, inputChannelID, 0));
+
+        channel.runPendingTasks();
+
+        // then: There are no errors and the buffer size received before should be applied.
+        Object objects = channel.outboundMessages().poll();
+        assertTrue(objects.toString(), channel.outboundMessages().isEmpty());
+        assertEquals(666, bufferSizeSubpartitionView.bufferSize);
+    }
+
+    private static class BufferSizeSubpartitionView extends NoOpResultSubpartitionView {
+        private int bufferSize = -1;
+
+        @Override
+        public void notifyNewBufferSize(int newBufferSize) {
+            bufferSize = newBufferSize;
+        }
     }
 
     private static class TestViewReader extends CreditBasedSequenceNumberingViewReader {

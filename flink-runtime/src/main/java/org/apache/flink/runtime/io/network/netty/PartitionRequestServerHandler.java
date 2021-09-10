@@ -82,16 +82,17 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
 
                 LOG.debug("Read channel on {}: {}.", ctx.channel().localAddress(), request);
 
+                // Always register reader before requesting the subpartition in order to
+                // subsequent requests will be sure that PartitionRequest was received already
+                // even if subpartition view has not created yet.
+                NetworkSequenceViewReader reader =
+                        outboundQueue.notifyReaderCreated(
+                                new CreditBasedSequenceNumberingViewReader(
+                                        request.receiverId, request.credit, outboundQueue));
                 try {
-                    NetworkSequenceViewReader reader;
-                    reader =
-                            new CreditBasedSequenceNumberingViewReader(
-                                    request.receiverId, request.credit, outboundQueue);
-
                     reader.requestSubpartitionView(
                             partitionProvider, request.partitionId, request.queueIndex);
 
-                    outboundQueue.notifyReaderCreated(reader);
                 } catch (PartitionNotFoundException notFound) {
                     respondWithError(ctx, notFound, request.receiverId);
                 }
