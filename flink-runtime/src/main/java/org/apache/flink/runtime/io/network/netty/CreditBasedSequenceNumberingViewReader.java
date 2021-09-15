@@ -240,7 +240,9 @@ class CreditBasedSequenceNumberingViewReader
 
     @Override
     public void releaseAllResources() throws IOException {
-        subpartitionView.releaseAllResources();
+        if (subpartitionView != null) {
+            subpartitionView.releaseAllResources();
+        }
     }
 
     @Override
