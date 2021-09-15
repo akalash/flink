@@ -80,7 +80,7 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
             if (msgClazz == PartitionRequest.class) {
                 PartitionRequest request = (PartitionRequest) msg;
 
-                LOG.debug("Read channel on {}: {}.", ctx.channel().localAddress(), request);
+                LOG.info("Read channel on {}: {}.", ctx.channel().localAddress(), request);
 
                 try {
                     NetworkSequenceViewReader reader;
@@ -130,6 +130,8 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
                 outboundQueue.acknowledgeAllRecordsProcessed(request.receiverId);
             } else if (msgClazz == NewBufferSize.class) {
                 NewBufferSize request = (NewBufferSize) msg;
+
+                LOG.info("Received NewBufferSize: {}", request);
 
                 outboundQueue.notifyNewBufferSize(request.receiverId, request.bufferSize);
             } else {

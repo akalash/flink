@@ -562,7 +562,8 @@ public abstract class NettyMessage {
 
         @Override
         public String toString() {
-            return String.format("PartitionRequest(%s:%d:%d)", partitionId, queueIndex, credit);
+            return String.format(
+                    "PartitionRequest(%s:%s:%d:%d)", partitionId, receiverId, queueIndex, credit);
         }
     }
 

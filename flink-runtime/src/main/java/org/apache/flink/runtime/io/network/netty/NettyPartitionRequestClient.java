@@ -106,11 +106,12 @@ public class NettyPartitionRequestClient implements PartitionRequestClient {
 
         checkNotClosed();
 
-        LOG.debug(
-                "Requesting subpartition {} of partition {} with {} ms delay.",
+        LOG.info(
+                "Requesting subpartition {} of partition {} with {} ms delay. inputChannel {}",
                 subpartitionIndex,
                 partitionId,
-                delayMs);
+                delayMs,
+                inputChannel.getInputChannelId());
 
         clientHandler.addInputChannel(inputChannel);
 
