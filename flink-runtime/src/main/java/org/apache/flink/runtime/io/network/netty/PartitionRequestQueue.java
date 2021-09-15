@@ -191,6 +191,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
     NetworkSequenceViewReader obtainReader(InputChannelID receiverId) {
         NetworkSequenceViewReader reader = allReaders.get(receiverId);
         if (reader == null) {
+            LOG.info("NO READER {} :: {}", receiverId, Thread.currentThread().getName());
             throw new IllegalStateException(
                     "No reader for receiverId = " + receiverId + " exists.");
         }
