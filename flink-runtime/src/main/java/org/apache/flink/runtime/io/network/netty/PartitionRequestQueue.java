@@ -234,6 +234,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
             availableReaders.removeIf(reader -> reader.getReceiverId().equals(toCancel));
 
             // remove reader from queue of all readers and release its resource
+            LOG.info("REMOVE READER :: {}, {}", toCancel, Thread.currentThread().getName());
             final NetworkSequenceViewReader toRelease = allReaders.remove(toCancel);
             if (toRelease != null) {
                 releaseViewReader(toRelease);
@@ -356,6 +357,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
             releaseViewReader(reader);
         }
 
+        LOG.info("RELEASE ALL RESOURCES__");
         availableReaders.clear();
         allReaders.clear();
     }
