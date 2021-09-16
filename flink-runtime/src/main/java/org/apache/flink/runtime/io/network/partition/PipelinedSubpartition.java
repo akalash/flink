@@ -459,7 +459,6 @@ public class PipelinedSubpartition extends ResultSubpartition
         if (desirableNewBufferSize < 0) {
             throw new IllegalArgumentException("New buffer size can not be less than zero");
         }
-        desirableNewBufferSize = 32768;
         synchronized (buffers) {
             bufferSize = desirableNewBufferSize;
         }
