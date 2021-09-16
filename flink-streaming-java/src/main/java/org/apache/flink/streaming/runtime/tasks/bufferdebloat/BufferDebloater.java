@@ -22,6 +22,9 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_TARGET;
@@ -33,6 +36,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
  * configuration.
  */
 public class BufferDebloater {
+    protected static final Logger LOG = LoggerFactory.getLogger(BufferDebloater.class);
     private static final long MILLIS_IN_SECOND = 1000;
 
     private final Duration targetTotalBufferSize;
@@ -98,6 +102,7 @@ public class BufferDebloater {
         }
 
         lastBufferSize = newSize;
+        LOG.info("NEW_BUFFER_SIZE:: {}", newSize);
         for (IndexedInputGate inputGate : inputGates) {
             inputGate.announceBufferSize(newSize);
         }
