@@ -65,6 +65,10 @@ public class BufferDebloater {
     }
 
     public void recalculateBufferSize(long currentThroughput) {
+        if (currentThroughput == 0) {
+            return;
+        }
+
         long desiredTotalBufferSizeInBytes =
                 (currentThroughput * targetTotalBufferSize.toMillis()) / MILLIS_IN_SECOND;
 
@@ -84,8 +88,9 @@ public class BufferDebloater {
                         newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));
 
         boolean skipUpdate =
-                Math.abs(1 - ((double) lastBufferSize) / newSize) * 100
-                        < bufferDebloatThresholdPercentages;
+                (newSize < maxBufferSize || newSize == lastBufferSize)
+                        && Math.abs(1 - ((double) lastBufferSize) / newSize) * 100
+                                < bufferDebloatThresholdPercentages;
 
         // Skip update if the new value pretty close to the old one.
         if (skipUpdate) {
