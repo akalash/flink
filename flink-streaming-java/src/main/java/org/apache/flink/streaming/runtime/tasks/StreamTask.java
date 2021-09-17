@@ -492,8 +492,37 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
      *     stream task.
      * @throws Exception on any problems in the action.
      */
+    long start;
+
+    long sum = 0;
+    long totalCount;
+    long moreAvailableCount;
+
     protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
+        if (start == 0) {
+            start = System.currentTimeMillis();
+        }
+        long time = System.nanoTime();
         DataInputStatus status = inputProcessor.processInput();
+        sum += (System.nanoTime() - time);
+        totalCount++;
+        moreAvailableCount += status == DataInputStatus.MORE_AVAILABLE ? 1 : 0;
+        if ((start + 60_000) < System.currentTimeMillis()) {
+            LOG.info(
+                    "PROCESS_INPUT :: "
+                            + Thread.currentThread().getName()
+                            + " :: "
+                            + sum
+                            + " :: "
+                            + totalCount
+                            + " :: "
+                            + moreAvailableCount);
+            start = 0;
+            sum = 0;
+            totalCount = 0;
+            moreAvailableCount = 0;
+        }
+
         switch (status) {
             case MORE_AVAILABLE:
                 if (recordWriter.isAvailable()) {
