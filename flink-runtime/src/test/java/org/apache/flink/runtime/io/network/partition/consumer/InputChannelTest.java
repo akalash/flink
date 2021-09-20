@@ -161,7 +161,7 @@ public class InputChannelTest {
         void announceBufferSize(int newBufferSize) {}
 
         @Override
-        int getBuffersInUseCount() {
+        public int getBuffersInUseCount() {
             return 0;
         }
     }
