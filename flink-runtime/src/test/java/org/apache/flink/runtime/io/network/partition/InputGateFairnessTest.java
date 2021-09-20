@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.network.partition;
 
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.io.network.ConnectionManager;
 import org.apache.flink.runtime.io.network.api.EndOfPartitionEvent;
 import org.apache.flink.runtime.io.network.api.serialization.EventSerializer;
@@ -43,8 +44,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.stream.IntStream;
 
 import static org.apache.flink.runtime.io.network.buffer.BufferBuilderTestUtils.createFilledFinishedBufferConsumer;
@@ -61,6 +64,22 @@ public class InputGateFairnessTest {
     public void testFairConsumptionLocalChannelsPreFilled() throws Exception {
         final int numberOfChannels = 37;
         final int buffersPerChannel = 27;
+        Tuple2<String, Integer> t1 = new Tuple2<>("one", 1);
+        Tuple2<String, Integer> t2 = new Tuple2<>("two", 1);
+        Tuple2<String, Integer> t3 = new Tuple2<>("three", 1);
+        Tuple2<String, Integer> t4 = new Tuple2<>("four", 1);
+
+        PriorityQueue<Tuple2<String, Integer>> priority =
+                new PriorityQueue<>(Comparator.comparingInt((t) -> t.f1));
+        priority.add(t1);
+        priority.add(t2);
+        priority.add(t3);
+        priority.add(t4);
+
+        System.out.println(priority.poll());
+        System.out.println(priority.poll());
+        System.out.println(priority.poll());
+        System.out.println(priority.poll());
 
         PipelinedResultPartition[] resultPartitions =
                 IntStream.range(0, numberOfChannels)
@@ -352,7 +371,7 @@ public class InputGateFairnessTest {
         private static final SupplierWithException<BufferPool, IOException>
                 STUB_BUFFER_POOL_FACTORY = NoOpBufferPool::new;
 
-        private final PrioritizedDeque<InputChannel> channelsWithData;
+        private final PrioritizedInputChannelDeque channelsWithData;
 
         private final HashSet<InputChannel> uniquenessChecker;
 

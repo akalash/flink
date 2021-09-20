@@ -136,7 +136,7 @@ class UnknownInputChannel extends InputChannel implements ChannelStateHolder {
     }
 
     @Override
-    int getBuffersInUseCount() {
+    public int getBuffersInUseCount() {
         return 0;
     }
 
