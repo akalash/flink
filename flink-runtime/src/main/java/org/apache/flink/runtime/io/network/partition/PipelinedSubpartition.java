@@ -575,6 +575,13 @@ public class PipelinedSubpartition extends ResultSubpartition
         }
     }
 
+    @Override
+    public int getBuffersInBacklog() {
+        synchronized (buffers) {
+            return getBuffersInBacklogUnsafe();
+        }
+    }
+
     @GuardedBy("buffers")
     private boolean shouldNotifyDataAvailable() {
         // Notify only when we added first finished buffer.

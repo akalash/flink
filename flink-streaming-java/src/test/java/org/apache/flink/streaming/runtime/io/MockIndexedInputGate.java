@@ -132,5 +132,10 @@ public class MockIndexedInputGate extends IndexedInputGate {
     }
 
     @Override
+    public int getNumberOfBuffers() {
+        return 0;
+    }
+
+    @Override
     public void announceBufferSize(int bufferSize) {}
 }

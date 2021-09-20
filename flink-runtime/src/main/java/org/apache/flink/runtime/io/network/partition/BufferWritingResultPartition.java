@@ -370,6 +370,21 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
 
         backPressuredTimeMsPerSecond.markStart();
         try {
+            int total = 0;
+            for (ResultSubpartition subpartition : subpartitions) {
+                if (subpartition.getBuffersInBacklog() == 0) {
+                    total++;
+                }
+            }
+            if (total > 0) {
+                LOG.info(
+                        "EMPTY_SUBPARTITION :: "
+                                + Thread.currentThread().getName()
+                                + " ++ "
+                                + total
+                                + " == "
+                                + subpartitions.length);
+            }
             bufferBuilder = bufferPool.requestBufferBuilderBlocking(targetSubpartition);
             backPressuredTimeMsPerSecond.markEnd();
             return bufferBuilder;

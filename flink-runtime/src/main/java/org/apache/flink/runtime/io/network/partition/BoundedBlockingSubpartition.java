@@ -290,6 +290,10 @@ final class BoundedBlockingSubpartition extends ResultSubpartition {
         return numDataBuffersWritten;
     }
 
+    int getBuffersInBacklog() {
+        return numDataBuffersWritten;
+    }
+
     // ---------------------------- factories --------------------------------
 
     /**

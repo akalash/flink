@@ -130,6 +130,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_PERIOD;
 import static org.apache.flink.util.ExceptionUtils.firstOrSuppressed;
@@ -497,6 +498,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     long sum = 0;
     long totalCount;
     long moreAvailableCount;
+    AtomicLong idleTime = new AtomicLong();
 
     protected void processInput(MailboxDefaultAction.Controller controller) throws Exception {
         if (start == 0) {
@@ -516,11 +518,14 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                             + " :: "
                             + totalCount
                             + " :: "
-                            + moreAvailableCount);
+                            + moreAvailableCount
+                            + " == "
+                            + idleTime.get());
             start = 0;
             sum = 0;
             totalCount = 0;
             moreAvailableCount = 0;
+            idleTime.set(0);
         }
 
         switch (status) {
@@ -553,9 +558,21 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             timer = new GaugePeriodTimer(ioMetrics.getBackPressuredTimePerSecond());
             resumeFuture = recordWriter.getAvailableFuture();
         } else {
+            for (IndexedInputGate allInputGate : getEnvironment().getAllInputGates()) {
+                int numberOfBuffers = allInputGate.getNumberOfBuffers();
+                if (numberOfBuffers > 0) {
+                    LOG.info(
+                            "EMPTY_INPUT_CHANNEL :: "
+                                    + Thread.currentThread().getName()
+                                    + " ++ "
+                                    + numberOfBuffers
+                                    + " == "
+                                    + allInputGate.getNumberOfInputChannels());
+                }
+            }
             timer =
                     new ThroughputPeriodTimer(
-                            ioMetrics.getIdleTimeMsPerSecond(), throughputCalculator);
+                            idleTime, ioMetrics.getIdleTimeMsPerSecond(), throughputCalculator);
             resumeFuture = inputProcessor.getAvailableFuture();
         }
         assertNoException(
@@ -1753,9 +1770,14 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         private final Clock clock = SystemClock.getInstance();
         private final TimerGauge idleTimerGauge;
         private final ThroughputCalculator throughputCalculator;
+        private final AtomicLong idleTime;
+        long start;
 
         private ThroughputPeriodTimer(
-                TimerGauge idleTimerGauge, ThroughputCalculator throughputCalculator) {
+                AtomicLong idleTime,
+                TimerGauge idleTimerGauge,
+                ThroughputCalculator throughputCalculator) {
+            this.idleTime = idleTime;
             this.idleTimerGauge = idleTimerGauge;
             this.throughputCalculator = throughputCalculator;
         }
@@ -1765,6 +1787,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             long absoluteTimeMillis = clock.absoluteTimeMillis();
             idleTimerGauge.markStart(absoluteTimeMillis);
             throughputCalculator.pauseMeasurement(absoluteTimeMillis);
+            start = absoluteTimeMillis;
         }
 
         @Override
@@ -1772,6 +1795,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             long absoluteTimeMillis = clock.absoluteTimeMillis();
             idleTimerGauge.markEnd(absoluteTimeMillis);
             throughputCalculator.resumeMeasurement(absoluteTimeMillis);
+            idleTime.addAndGet(absoluteTimeMillis - start);
         }
     }
 

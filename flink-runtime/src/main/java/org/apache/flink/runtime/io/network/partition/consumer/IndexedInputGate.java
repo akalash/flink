@@ -67,5 +67,7 @@ public abstract class IndexedInputGate extends InputGate implements Checkpointab
 
     public abstract int getBuffersInUseCount();
 
+    public abstract int getNumberOfBuffers();
+
     public abstract void announceBufferSize(int bufferSize);
 }

@@ -100,6 +100,8 @@ public abstract class ResultSubpartition {
     /** Gets the number of non-event buffers in this subpartition. */
     abstract int getBuffersInBacklogUnsafe();
 
+    abstract int getBuffersInBacklog();
+
     /**
      * Makes a best effort to get the current size of the queue. This method must not acquire locks
      * or interfere with the task and network threads in any way.
