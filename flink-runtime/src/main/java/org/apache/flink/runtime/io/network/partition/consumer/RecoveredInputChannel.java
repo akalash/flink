@@ -201,7 +201,7 @@ public abstract class RecoveredInputChannel extends InputChannel implements Chan
     }
 
     @Override
-    int getBuffersInUseCount() {
+    public int getBuffersInUseCount() {
         synchronized (receivedBuffers) {
             return receivedBuffers.size();
         }

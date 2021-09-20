@@ -210,7 +210,7 @@ public class TestInputChannel extends InputChannel {
     }
 
     @Override
-    int getBuffersInUseCount() {
+    public int getBuffersInUseCount() {
         return buffers.size();
     }
 
