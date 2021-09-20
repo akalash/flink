@@ -370,6 +370,8 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
 
         backPressuredTimeMsPerSecond.markStart();
         try {
+            bufferBuilder = bufferPool.requestBufferBuilderBlocking(targetSubpartition);
+            backPressuredTimeMsPerSecond.markEnd();
             int total = 0;
             for (ResultSubpartition subpartition : subpartitions) {
                 if (subpartition.getBuffersInBacklog() == 0) {
@@ -385,8 +387,6 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
                                 + " == "
                                 + subpartitions.length);
             }
-            bufferBuilder = bufferPool.requestBufferBuilderBlocking(targetSubpartition);
-            backPressuredTimeMsPerSecond.markEnd();
             return bufferBuilder;
         } catch (InterruptedException e) {
             throw new IOException("Interrupted while waiting for buffer");
