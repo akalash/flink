@@ -801,7 +801,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
         // final check to exit early before starting to run
         ensureNotCanceled();
-        scheduleBufferDebloater(60_000);
+        scheduleBufferDebloater(3_000);
 
         // let the task do its work
         runMailboxLoop();
