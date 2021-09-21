@@ -49,7 +49,11 @@ import org.apache.flink.runtime.io.network.api.writer.ResultPartitionWriter;
 import org.apache.flink.runtime.io.network.api.writer.SingleRecordWriter;
 import org.apache.flink.runtime.io.network.partition.ChannelStateHolder;
 import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
+import org.apache.flink.runtime.io.network.partition.consumer.InputChannel;
 import org.apache.flink.runtime.io.network.partition.consumer.InputGate;
+import org.apache.flink.runtime.io.network.partition.consumer.LocalInputChannel;
+import org.apache.flink.runtime.io.network.partition.consumer.RemoteInputChannel;
+import org.apache.flink.runtime.io.network.partition.consumer.SingleInputGate;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointableTask;
 import org.apache.flink.runtime.jobgraph.tasks.CoordinatedTask;
@@ -802,6 +806,33 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         // final check to exit early before starting to run
         ensureNotCanceled();
         scheduleBufferDebloater(3_000);
+
+        int localInputChannel = 0;
+        int remoteInputChannel = 0;
+        int total = 0;
+        for (IndexedInputGate allInputGate : getEnvironment().getAllInputGates()) {
+            if (allInputGate instanceof SingleInputGate) {
+                SingleInputGate inputGate = (SingleInputGate) allInputGate;
+                for (InputChannel inputChannel : inputGate.getInputChannels().values()) {
+                    total++;
+                    if (inputChannel instanceof LocalInputChannel) {
+                        localInputChannel++;
+                    } else if (inputChannel instanceof RemoteInputChannel) {
+                        remoteInputChannel++;
+                    }
+                }
+            }
+        }
+
+        LOG.info(
+                "TYPE_INPUT_CHANNELS :: "
+                        + Thread.currentThread().getName()
+                        + " ++local "
+                        + localInputChannel
+                        + " ++remote "
+                        + remoteInputChannel
+                        + " ++total "
+                        + total);
 
         // let the task do its work
         runMailboxLoop();
