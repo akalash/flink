@@ -810,6 +810,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         int remoteInputChannel = 0;
         int total = 0;
         for (IndexedInputGate allInputGate : getEnvironment().getAllInputGates()) {
+            LOG.info(
+                    "NUMBER_OF_INPUT_CHANNELS :: "
+                            + Thread.currentThread().getName()
+                            + " ++ "
+                            + allInputGate.getNumberOfInputChannels());
             for (int i = 0; i < allInputGate.getNumberOfInputChannels(); i++) {
                 InputChannel inputChannel = allInputGate.getChannel(i);
                 total++;
