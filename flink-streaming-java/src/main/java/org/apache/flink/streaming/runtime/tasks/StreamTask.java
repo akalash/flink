@@ -53,7 +53,6 @@ import org.apache.flink.runtime.io.network.partition.consumer.InputChannel;
 import org.apache.flink.runtime.io.network.partition.consumer.InputGate;
 import org.apache.flink.runtime.io.network.partition.consumer.LocalInputChannel;
 import org.apache.flink.runtime.io.network.partition.consumer.RemoteInputChannel;
-import org.apache.flink.runtime.io.network.partition.consumer.SingleInputGate;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointableTask;
 import org.apache.flink.runtime.jobgraph.tasks.CoordinatedTask;
@@ -811,15 +810,13 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         int remoteInputChannel = 0;
         int total = 0;
         for (IndexedInputGate allInputGate : getEnvironment().getAllInputGates()) {
-            if (allInputGate instanceof SingleInputGate) {
-                SingleInputGate inputGate = (SingleInputGate) allInputGate;
-                for (InputChannel inputChannel : inputGate.getInputChannels().values()) {
-                    total++;
-                    if (inputChannel instanceof LocalInputChannel) {
-                        localInputChannel++;
-                    } else if (inputChannel instanceof RemoteInputChannel) {
-                        remoteInputChannel++;
-                    }
+            for (int i = 0; i < allInputGate.getNumberOfInputChannels(); i++) {
+                InputChannel inputChannel = allInputGate.getChannel(i);
+                total++;
+                if (inputChannel instanceof LocalInputChannel) {
+                    localInputChannel++;
+                } else if (inputChannel instanceof RemoteInputChannel) {
+                    remoteInputChannel++;
                 }
             }
         }
