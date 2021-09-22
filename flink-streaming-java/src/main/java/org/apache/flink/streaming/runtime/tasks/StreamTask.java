@@ -563,19 +563,18 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             timer = new GaugePeriodTimer(ioMetrics.getBackPressuredTimePerSecond());
             resumeFuture = recordWriter.getAvailableFuture();
         } else {
-            //            for (IndexedInputGate allInputGate : getEnvironment().getAllInputGates())
-            // {
-            //                int numberOfBuffers = allInputGate.getNumberOfBuffers();
-            //                if (numberOfBuffers > 0) {
-            //                    LOG.info(
-            //                            "EMPTY_INPUT_CHANNEL :: "
-            //                                    + Thread.currentThread().getName()
-            //                                    + " ++ "
-            //                                    + numberOfBuffers
-            //                                    + " == "
-            //                                    + allInputGate.getNumberOfInputChannels());
-            //                }
-            //            }
+            for (IndexedInputGate allInputGate : getEnvironment().getAllInputGates()) {
+                int numberOfBuffers = allInputGate.getNumberOfBuffers();
+                if (numberOfBuffers > 0) {
+                    LOG.info(
+                            "EMPTY_INPUT_CHANNEL :: "
+                                    + Thread.currentThread().getName()
+                                    + " ++ "
+                                    + numberOfBuffers
+                                    + " == "
+                                    + allInputGate.getNumberOfInputChannels());
+                }
+            }
             timer =
                     new ThroughputPeriodTimer(
                             idleTime, ioMetrics.getIdleTimeMsPerSecond(), throughputCalculator);
