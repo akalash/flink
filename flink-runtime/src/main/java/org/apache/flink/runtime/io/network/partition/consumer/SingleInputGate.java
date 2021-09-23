@@ -148,8 +148,7 @@ public class SingleInputGate extends IndexedInputGate {
     private final InputChannel[] channels;
 
     /** Channels, which notified this input gate about available data. */
-    private final PrioritizedInputChannelDeque inputChannelsWithData =
-            new PrioritizedInputChannelDeque();
+    private final PrioritizedInputChannelDeque inputChannelsWithData;
 
     /**
      * Field guaranteeing uniqueness for inputChannelsWithData queue. Both of those fields should be
@@ -230,6 +229,8 @@ public class SingleInputGate extends IndexedInputGate {
 
         checkArgument(numberOfInputChannels > 0);
         this.numberOfInputChannels = numberOfInputChannels;
+
+        inputChannelsWithData = new PrioritizedInputChannelDeque(numberOfInputChannels);
 
         this.inputChannels = new HashMap<>(numberOfInputChannels);
         this.channels = new InputChannel[numberOfInputChannels];
@@ -722,8 +723,7 @@ public class SingleInputGate extends IndexedInputGate {
                 final BufferAndAvailability bufferAndAvailability = bufferAndAvailabilityOpt.get();
                 if (bufferAndAvailability.moreAvailable()) {
                     // enqueue the inputChannel at the end to avoid starvation
-                    //                    queueChannelUnsafe(inputChannel,
-                    // bufferAndAvailability.morePriorityEvents());
+                    queueChannelUnsafe(inputChannel, bufferAndAvailability.morePriorityEvents());
                 }
 
                 final boolean morePriorityEvents =
