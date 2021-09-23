@@ -371,7 +371,7 @@ public class InputGateFairnessTest {
         private static final SupplierWithException<BufferPool, IOException>
                 STUB_BUFFER_POOL_FACTORY = NoOpBufferPool::new;
 
-        private final PrioritizedDeque<InputChannel> channelsWithData;
+        private final PrioritizedInputChannelDeque channelsWithData;
 
         private final HashSet<InputChannel> uniquenessChecker;
 

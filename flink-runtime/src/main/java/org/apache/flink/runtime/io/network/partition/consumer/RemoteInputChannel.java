@@ -565,13 +565,14 @@ public class RemoteInputChannel extends InputChannel {
             if (firstPriorityEvent) {
                 notifyPriorityEvent(sequenceNumber);
             }
-            if (wasEmpty) {
-                notifyChannelNonEmpty();
-            }
 
             if (backlog >= 0) {
                 onSenderBacklog(backlog);
             }
+
+            //            if (wasEmpty) {
+            notifyChannelNonEmpty();
+            //            }
         } finally {
             if (recycleBuffer) {
                 buffer.recycleBuffer();
