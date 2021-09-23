@@ -49,16 +49,10 @@ public final class PrioritizedInputChannelDeque implements Iterable<InputChannel
     private final PriorityQueue<NodeInputChannel> nonPriority = new PriorityQueue<>();
     private int numPriorityElements;
     private long globalId = 0;
-    private final NodeInputChannel[] channels;
-
-    public PrioritizedInputChannelDeque(int numberOfChannels) {
-        channels = new NodeInputChannel[numberOfChannels];
-    }
 
     private static class NodeInputChannel implements Comparable<NodeInputChannel> {
         InputChannel delegate;
         long id;
-        boolean deleted;
 
         public NodeInputChannel(InputChannel delegate, long id) {
             this.delegate = delegate;
@@ -109,12 +103,7 @@ public final class PrioritizedInputChannelDeque implements Iterable<InputChannel
      * @param element the element to add
      */
     public void add(InputChannel element) {
-        NodeInputChannel channel = channels[element.getChannelIndex()];
-        if (channel != null) {
-            channel.deleted = true;
-        }
-        channels[element.getChannelIndex()] = new NodeInputChannel(element, globalId++);
-        nonPriority.add(channels[element.getChannelIndex()]);
+        nonPriority.add(new NodeInputChannel(element, globalId++));
     }
 
     /**
@@ -206,30 +195,7 @@ public final class PrioritizedInputChannelDeque implements Iterable<InputChannel
         if (polled != null && numPriorityElements > 0) {
             numPriorityElements--;
         }
-        return polled == null ? pollChannel() : polled;
-    }
-
-    InputChannel pollChannel() {
-        NodeInputChannel poll = null;
-
-        do {
-            poll = nonPriority.poll();
-        } while (poll != null && poll.deleted);
-
-        return convert(poll);
-    }
-
-    InputChannel peekChannel() {
-        NodeInputChannel poll = null;
-
-        do {
-            poll = nonPriority.peek();
-            if (poll != null && poll.deleted) {
-                nonPriority.poll();
-            }
-        } while (poll != null && poll.deleted);
-
-        return convert(poll);
+        return polled == null ? convert(nonPriority.poll()) : polled;
     }
 
     /**
@@ -240,7 +206,7 @@ public final class PrioritizedInputChannelDeque implements Iterable<InputChannel
     @Nullable
     public InputChannel peek() {
         InputChannel peek = deque.peek();
-        return peek == null ? peekChannel() : peek;
+        return peek == null ? convert(nonPriority.peek()) : peek;
     }
 
     private static InputChannel convert(NodeInputChannel nodeInputChannel) {
