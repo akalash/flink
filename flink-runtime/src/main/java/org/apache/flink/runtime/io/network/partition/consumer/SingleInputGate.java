@@ -35,6 +35,7 @@ import org.apache.flink.runtime.io.network.buffer.BufferDecompressor;
 import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.buffer.BufferProvider;
 import org.apache.flink.runtime.io.network.partition.PartitionProducerStateProvider;
+import org.apache.flink.runtime.io.network.partition.PrioritizedDeque;
 import org.apache.flink.runtime.io.network.partition.PrioritizedInputChannelDeque;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
@@ -148,8 +149,7 @@ public class SingleInputGate extends IndexedInputGate {
     private final InputChannel[] channels;
 
     /** Channels, which notified this input gate about available data. */
-    private final PrioritizedInputChannelDeque inputChannelsWithData =
-            new PrioritizedInputChannelDeque();
+    private final PrioritizedDeque<InputChannel> inputChannelsWithData;
 
     /**
      * Field guaranteeing uniqueness for inputChannelsWithData queue. Both of those fields should be
@@ -230,6 +230,11 @@ public class SingleInputGate extends IndexedInputGate {
 
         checkArgument(numberOfInputChannels > 0);
         this.numberOfInputChannels = numberOfInputChannels;
+        if (numberOfInputChannels == 1) {
+            inputChannelsWithData = new PrioritizedDeque<>();
+        } else {
+            inputChannelsWithData = new PrioritizedInputChannelDeque();
+        }
 
         this.inputChannels = new HashMap<>(numberOfInputChannels);
         this.channels = new InputChannel[numberOfInputChannels];
@@ -249,7 +254,7 @@ public class SingleInputGate extends IndexedInputGate {
         this.unpooledSegment = MemorySegmentFactory.allocateUnpooledSegment(segmentSize);
     }
 
-    protected PrioritizedInputChannelDeque getInputChannelsWithData() {
+    protected PrioritizedDeque<InputChannel> getInputChannelsWithData() {
         return inputChannelsWithData;
     }
 
