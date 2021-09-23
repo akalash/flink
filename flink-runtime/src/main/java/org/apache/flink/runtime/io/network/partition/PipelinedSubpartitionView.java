@@ -101,7 +101,7 @@ public class PipelinedSubpartitionView implements ResultSubpartitionView {
 
     @Override
     public int getNumberOfQueuedBuffers() {
-        return parent.getNumberOfQueuedBuffers();
+        return parent.getBuffersInBacklog();
     }
 
     @Override
