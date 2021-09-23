@@ -46,9 +46,9 @@ import java.util.stream.StreamSupport;
  * @param <T> the element type.
  */
 @Internal
-public final class PrioritizedDeque<T> implements Iterable<T> {
-    private final Deque<T> deque = new ArrayDeque<>();
-    private int numPriorityElements;
+public class PrioritizedDeque<T> implements Iterable<T> {
+    protected final Deque<T> deque = new ArrayDeque<>();
+    protected int numPriorityElements;
 
     /**
      * Adds a priority element to this deque, such that it will be polled after all existing
@@ -116,7 +116,7 @@ public final class PrioritizedDeque<T> implements Iterable<T> {
      * @param element the element to prioritize.
      */
     public void prioritize(T element) {
-        final Iterator<T> iterator = deque.iterator();
+        final Iterator<T> iterator = iterator();
         // Already prioritized? Then, do not reorder elements.
         for (int i = 0; i < numPriorityElements && iterator.hasNext(); i++) {
             if (iterator.next() == element) {
@@ -151,7 +151,7 @@ public final class PrioritizedDeque<T> implements Iterable<T> {
      * @return removed element
      */
     public T getAndRemove(Predicate<T> preCondition) {
-        Iterator<T> iterator = deque.iterator();
+        Iterator<T> iterator = iterator();
         for (int i = 0; iterator.hasNext(); i++) {
             T next = iterator.next();
             if (preCondition.test(next)) {
@@ -222,7 +222,7 @@ public final class PrioritizedDeque<T> implements Iterable<T> {
 
     /** @return read-only iterator */
     public Iterator<T> iterator() {
-        return Collections.unmodifiableCollection(deque).iterator();
+        return deque.iterator();
     }
 
     /** Removes all priority and non-priority elements. */
@@ -243,7 +243,7 @@ public final class PrioritizedDeque<T> implements Iterable<T> {
         if (deque.isEmpty()) {
             return false;
         }
-        final Iterator<T> iterator = deque.iterator();
+        final Iterator<T> iterator = iterator();
         while (iterator.hasNext()) {
             if (iterator.next() == element) {
                 return true;
