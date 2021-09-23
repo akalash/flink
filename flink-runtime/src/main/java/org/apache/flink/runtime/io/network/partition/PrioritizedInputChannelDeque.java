@@ -67,10 +67,7 @@ public final class PrioritizedInputChannelDeque implements Iterable<InputChannel
 
         @Override
         public int compareTo(NodeInputChannel o) {
-            int compare =
-                    Integer.compare(
-                            o.delegate.getBuffersInUseCount(),
-                            this.delegate.getBuffersInUseCount());
+            int compare = Integer.compare(o.delegate.getBacklog(), this.delegate.getBacklog());
             if (compare == 0) {
                 return Long.compare(this.id, o.id);
             }

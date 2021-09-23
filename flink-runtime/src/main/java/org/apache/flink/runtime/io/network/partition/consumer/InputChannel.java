@@ -216,6 +216,8 @@ public abstract class InputChannel {
 
     public abstract int getBuffersInUseCount();
 
+    public abstract int getBacklog();
+
     // ------------------------------------------------------------------------
     // Error notification
     // ------------------------------------------------------------------------

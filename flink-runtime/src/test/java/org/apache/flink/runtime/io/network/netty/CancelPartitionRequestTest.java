@@ -247,6 +247,11 @@ public class CancelPartitionRequestTest {
         }
 
         @Override
+        public int getBacklog() {
+            return 0;
+        }
+
+        @Override
         public void notifyNewBufferSize(int newBufferSize) {}
 
         @Override

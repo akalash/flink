@@ -159,6 +159,11 @@ public class BoundedBlockingSubpartitionDirectTransferReader implements ResultSu
     }
 
     @Override
+    public int getBacklog() {
+        return parent.getBuffersInBacklog();
+    }
+
+    @Override
     public void notifyNewBufferSize(int newBufferSize) {
         parent.bufferSize(newBufferSize);
     }

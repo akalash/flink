@@ -208,6 +208,13 @@ public abstract class RecoveredInputChannel extends InputChannel implements Chan
     }
 
     @Override
+    public int getBacklog() {
+        synchronized (receivedBuffers) {
+            return receivedBuffers.size();
+        }
+    }
+
+    @Override
     public void resumeConsumption() {
         throw new UnsupportedOperationException("RecoveredInputChannel should never be blocked.");
     }

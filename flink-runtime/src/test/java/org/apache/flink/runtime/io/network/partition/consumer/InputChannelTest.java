@@ -164,5 +164,10 @@ public class InputChannelTest {
         public int getBuffersInUseCount() {
             return 0;
         }
+
+        @Override
+        public int getBacklog() {
+            return 0;
+        }
     }
 }

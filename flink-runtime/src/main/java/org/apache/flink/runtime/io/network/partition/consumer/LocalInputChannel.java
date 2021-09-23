@@ -350,6 +350,11 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
     }
 
     @Override
+    public int getBacklog() {
+        return subpartitionView.getBacklog();
+    }
+
+    @Override
     public int unsynchronizedGetNumberOfQueuedBuffers() {
         ResultSubpartitionView view = subpartitionView;
 

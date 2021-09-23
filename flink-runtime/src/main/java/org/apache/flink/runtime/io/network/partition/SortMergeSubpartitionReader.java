@@ -244,5 +244,10 @@ class SortMergeSubpartitionReader
     }
 
     @Override
+    public int getBacklog() {
+        return 0;
+    }
+
+    @Override
     public void notifyNewBufferSize(int newBufferSize) {}
 }

@@ -294,6 +294,11 @@ public class RemoteInputChannel extends InputChannel {
     }
 
     @Override
+    public int getBacklog() {
+        return Math.max(0, bufferManager.getNumberOfRequiredBuffers() - initialCredit);
+    }
+
+    @Override
     void announceBufferSize(int newBufferSize) {
         try {
             notifyNewBufferSize(newBufferSize);

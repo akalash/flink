@@ -215,6 +215,11 @@ public class TestInputChannel extends InputChannel {
     }
 
     @Override
+    public int getBacklog() {
+        return 0;
+    }
+
+    @Override
     public void resumeConsumption() {
         isBlocked = false;
         if (actionOnResumed != null) {

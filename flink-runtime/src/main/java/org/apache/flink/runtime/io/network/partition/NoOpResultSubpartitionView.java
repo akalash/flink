@@ -66,5 +66,10 @@ public class NoOpResultSubpartitionView implements ResultSubpartitionView {
     }
 
     @Override
+    public int getBacklog() {
+        return 0;
+    }
+
+    @Override
     public void notifyNewBufferSize(int newBufferSize) {}
 }
