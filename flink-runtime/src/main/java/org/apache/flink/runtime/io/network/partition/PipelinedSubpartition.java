@@ -194,9 +194,9 @@ public class PipelinedSubpartition extends ResultSubpartition
         if (prioritySequenceNumber != -1) {
             notifyPriorityEvent(prioritySequenceNumber);
         }
-        //        if (notifyDataAvailable) {
-        notifyDataAvailable();
-        //        }
+        if (notifyDataAvailable) {
+            notifyDataAvailable();
+        }
 
         return newBufferSize;
     }

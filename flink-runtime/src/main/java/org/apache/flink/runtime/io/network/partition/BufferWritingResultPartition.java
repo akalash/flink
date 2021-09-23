@@ -152,23 +152,23 @@ public abstract class BufferWritingResultPartition extends ResultPartition {
             finishUnicastBufferBuilder(targetSubpartition);
         }
 
-        //        if (!isAvailable()) {
-        //            int total = 0;
-        //            for (ResultSubpartition subpartition : subpartitions) {
-        //                if (subpartition.getBuffersInBacklog() == 0) {
-        //                    total++;
-        //                }
-        //            }
-        //            if (total > 0) {
-        //                LOG.info(
-        //                        "EMPTY_SUBPARTITION2 :: "
-        //                                + Thread.currentThread().getName()
-        //                                + " ++ "
-        //                                + total
-        //                                + " == "
-        //                                + subpartitions.length);
-        //            }
-        //        }
+        if (!isAvailable()) {
+            int total = 0;
+            for (ResultSubpartition subpartition : subpartitions) {
+                if (subpartition.getBuffersInBacklog() == 0) {
+                    total++;
+                }
+            }
+            if (total > 0) {
+                LOG.info(
+                        "EMPTY_SUBPARTITION2 :: "
+                                + Thread.currentThread().getName()
+                                + " ++ "
+                                + total
+                                + " == "
+                                + subpartitions.length);
+            }
+        }
         // partial buffer, full record
     }
 

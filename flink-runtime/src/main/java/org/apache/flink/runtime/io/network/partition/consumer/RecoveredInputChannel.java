@@ -140,9 +140,9 @@ public abstract class RecoveredInputChannel extends InputChannel implements Chan
                 }
             }
 
-            //            if (wasEmpty) {
-            notifyChannelNonEmpty();
-            //            }
+            if (wasEmpty) {
+                notifyChannelNonEmpty();
+            }
         } finally {
             if (recycleBuffer) {
                 buffer.recycleBuffer();
