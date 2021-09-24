@@ -18,12 +18,21 @@
 
 package org.apache.flink.runtime.throughput;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+
 import static org.apache.flink.util.Preconditions.checkArgument;
 
 /** Implementation of 'Exponential moving average' algorithm. */
 public class ThroughputEMA {
+    protected static final Logger LOG = LoggerFactory.getLogger(ThroughputEMA.class);
     private static final long MILLIS_IN_SECOND = 1000;
+    public static final int NUMBER_TO_LOG = 60;
     private long currentThroughput;
+    private ArrayList<Long> instantThroughputs = new ArrayList<>(NUMBER_TO_LOG);
+    private ArrayList<Long> resultThroughputs = new ArrayList<>(NUMBER_TO_LOG);
 
     /** EMA algorithm specific constant which responsible for speed of reaction. */
     private final double alpha;
@@ -49,16 +58,28 @@ public class ThroughputEMA {
 
         if (currentThroughput != 0) {
             long instantThroughput = instantThroughput(dataSize, time);
+            instantThroughputs.add(instantThroughput);
             //            instantThroughput = instantThroughput > 35000 ? 35000 : instantThroughput;
-            if (instantThroughput > currentThroughput) {
-                currentThroughput = (long) (1.2 * instantThroughput);
-            } else {
-                currentThroughput += alpha * (instantThroughput - currentThroughput);
-            }
+            //            if (instantThroughput > currentThroughput) {
+            //                currentThroughput = (long) (1.2 * instantThroughput);
+            //            } else {
+            //                currentThroughput += alpha * (instantThroughput - currentThroughput);
+            //            }
             currentThroughput += alpha * (instantThroughput - currentThroughput);
         } else {
             // Warm-up case.
             currentThroughput = instantThroughput(dataSize, time);
+        }
+
+        resultThroughputs.add(currentThroughput);
+        if (instantThroughputs.size() == NUMBER_TO_LOG) {
+            LOG.info(
+                    "THROUGHPUT_RES :: "
+                            + Thread.currentThread().getName()
+                            + " :: "
+                            + instantThroughputs.toString()
+                            + " ++ "
+                            + resultThroughputs);
         }
 
         return currentThroughput;
