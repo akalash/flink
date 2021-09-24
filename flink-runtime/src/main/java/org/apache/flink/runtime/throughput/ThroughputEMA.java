@@ -80,6 +80,8 @@ public class ThroughputEMA {
                             + instantThroughputs.toString()
                             + " ++ "
                             + resultThroughputs);
+            instantThroughputs.clear();
+            resultThroughputs.clear();
         }
 
         return currentThroughput;
