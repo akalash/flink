@@ -18,12 +18,22 @@
 
 package org.apache.flink.runtime.throughput;
 
+import org.apache.flink.api.java.tuple.Tuple2;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+
 import static org.apache.flink.util.Preconditions.checkArgument;
 
 /** Implementation of 'Exponential moving average' algorithm. */
 public class ThroughputEMA {
+    protected static final Logger LOG = LoggerFactory.getLogger(ThroughputEMA.class);
     private static final long MILLIS_IN_SECOND = 1000;
+    public static final int NUMBER_TO_LOG = 60;
     private long currentThroughput;
+    private ArrayList<Tuple2<Long, Long>> throughputs = new ArrayList<>(NUMBER_TO_LOG);
 
     /** EMA algorithm specific constant which responsible for speed of reaction. */
     private final double alpha;
@@ -47,11 +57,24 @@ public class ThroughputEMA {
             return currentThroughput;
         }
 
+        long instantThroughput = 0;
         if (currentThroughput != 0) {
-            currentThroughput += alpha * (instantThroughput(dataSize, time) - currentThroughput);
+            instantThroughput = instantThroughput(dataSize, time);
+            currentThroughput += alpha * (instantThroughput - currentThroughput);
         } else {
             // Warm-up case.
             currentThroughput = instantThroughput(dataSize, time);
+        }
+
+        throughputs.add(new Tuple2<>(instantThroughput, currentThroughput));
+        if (throughputs.size() == NUMBER_TO_LOG) {
+            LOG.info(
+                    "THROUGHPUT_RES :: "
+                            + Thread.currentThread().getName()
+                            + " :: "
+                            + throughputs.toString());
+
+            throughputs.clear();
         }
 
         return currentThroughput;
