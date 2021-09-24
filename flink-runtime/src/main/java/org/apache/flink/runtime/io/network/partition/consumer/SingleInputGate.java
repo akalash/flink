@@ -36,7 +36,6 @@ import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.buffer.BufferProvider;
 import org.apache.flink.runtime.io.network.partition.PartitionProducerStateProvider;
 import org.apache.flink.runtime.io.network.partition.PrioritizedDeque;
-import org.apache.flink.runtime.io.network.partition.PrioritizedInputChannelDeque;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.io.network.partition.consumer.InputChannel.BufferAndAvailability;
@@ -233,7 +232,7 @@ public class SingleInputGate extends IndexedInputGate {
         if (numberOfInputChannels == 1) {
             inputChannelsWithData = new PrioritizedDeque<>();
         } else {
-            inputChannelsWithData = new PrioritizedInputChannelDeque();
+            inputChannelsWithData = new PrioritizedDeque();
         }
 
         this.inputChannels = new HashMap<>(numberOfInputChannels);
