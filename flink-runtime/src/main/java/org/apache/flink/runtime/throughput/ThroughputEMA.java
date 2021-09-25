@@ -24,6 +24,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 public class ThroughputEMA {
     private static final long MILLIS_IN_SECOND = 1000;
     private long currentThroughput;
+    private long instantThroughput;
 
     /** EMA algorithm specific constant which responsible for speed of reaction. */
     private final double alpha;
@@ -43,18 +44,23 @@ public class ThroughputEMA {
         checkArgument(dataSize >= 0, "Size of data should be non negative");
         checkArgument(time >= 0, "Time should be non negative");
 
-        if (time == 0) {
-            return currentThroughput;
-        }
-
-        if (currentThroughput != 0) {
-            currentThroughput += alpha * (instantThroughput(dataSize, time) - currentThroughput);
+        if (time != 0) {
+            if (currentThroughput != 0) {
+                instantThroughput = instantThroughput(dataSize, time);
+                currentThroughput += alpha * (instantThroughput - currentThroughput);
+            } else {
+                // Warm-up case.
+                currentThroughput = instantThroughput(dataSize, time);
+            }
         } else {
-            // Warm-up case.
-            currentThroughput = instantThroughput(dataSize, time);
+            instantThroughput = -1;
         }
 
         return currentThroughput;
+    }
+
+    public long getInstantThroughput() {
+        return instantThroughput;
     }
 
     static long instantThroughput(long dataSize, long time) {

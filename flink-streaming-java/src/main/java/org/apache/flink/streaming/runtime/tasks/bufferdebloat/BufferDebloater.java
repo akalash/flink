@@ -18,11 +18,16 @@
 
 package org.apache.flink.streaming.runtime.tasks.bufferdebloat;
 
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
+import java.util.ArrayList;
 
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_TARGET;
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_THRESHOLD_PERCENTAGES;
@@ -34,6 +39,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
  */
 public class BufferDebloater {
     private static final long MILLIS_IN_SECOND = 1000;
+    protected static final Logger LOG = LoggerFactory.getLogger(BufferDebloater.class);
 
     private final Duration targetTotalBufferSize;
     private final IndexedInputGate[] inputGates;
@@ -43,6 +49,9 @@ public class BufferDebloater {
 
     private int lastBufferSize;
     private Duration lastEstimatedTimeToConsumeBuffers = Duration.ZERO;
+    public static final int NUMBER_TO_LOG = 100;
+    private ArrayList<Tuple4<Long, Long, Integer, Boolean>> throughputs =
+            new ArrayList<>(NUMBER_TO_LOG);
 
     public BufferDebloater(Configuration taskConfig, IndexedInputGate[] inputGates) {
         this.inputGates = inputGates;
@@ -64,8 +73,10 @@ public class BufferDebloater {
         checkArgument(targetTotalBufferSize.toMillis() > 0.0);
     }
 
-    public void recalculateBufferSize(long currentThroughput) {
+    public void recalculateBufferSize(long currentThroughput, long instantThroughput) {
         if (currentThroughput == 0) {
+            throughputs.add(
+                    new Tuple4<>(instantThroughput, currentThroughput, lastBufferSize, true));
             return;
         }
 
@@ -92,6 +103,17 @@ public class BufferDebloater {
                         && (newSize < maxBufferSize || newSize == lastBufferSize)
                         && Math.abs(1 - ((double) lastBufferSize) / newSize) * 100
                                 < bufferDebloatThresholdPercentages;
+
+        throughputs.add(new Tuple4<>(instantThroughput, currentThroughput, newSize, skipUpdate));
+        if (throughputs.size() >= NUMBER_TO_LOG) {
+            LOG.info(
+                    "THROUGHPUT_RES :: "
+                            + Thread.currentThread().getName()
+                            + " :: "
+                            + throughputs.toString());
+
+            throughputs.clear();
+        }
 
         // Skip update if the new value pretty close to the old one.
         if (skipUpdate) {
