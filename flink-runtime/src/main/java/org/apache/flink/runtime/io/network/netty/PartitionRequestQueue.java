@@ -40,9 +40,11 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.apache.flink.runtime.io.network.netty.NettyMessage.BufferResponse;
 import static org.apache.flink.util.Preconditions.checkArgument;
@@ -59,7 +61,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
             new WriteAndFlushNextMessageIfPossibleListener();
 
     /** The readers which are already enqueued available for transferring data. */
-    private final ArrayDeque<NetworkSequenceViewReader> availableReaders = new ArrayDeque<>();
+    private final PriorityQueue<ReaderNode> availableReaders = new PriorityQueue<>();
 
     /** All the readers created for the consumers' partition requests. */
     private final ConcurrentMap<InputChannelID, NetworkSequenceViewReader> allReaders =
@@ -69,8 +71,30 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
 
     private ChannelHandlerContext ctx;
 
+    private static class ReaderNode implements Comparable<ReaderNode> {
+        final NetworkSequenceViewReader reader;
+        final int backlog;
+        final int id;
+
+        private ReaderNode(NetworkSequenceViewReader reader, int backlog, int id) {
+            this.reader = reader;
+            this.backlog = backlog;
+            this.id = id;
+        }
+
+        @Override
+        public int compareTo(ReaderNode o) {
+            int compare = Integer.compare(o.backlog, this.backlog);
+            if (compare == 0) {
+                return Long.compare(this.id, o.id);
+            }
+            return compare;
+        }
+    }
+
     @Override
     public void channelRegistered(final ChannelHandlerContext ctx) throws Exception {
+
         if (this.ctx == null) {
             this.ctx = ctx;
         }
@@ -117,7 +141,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
         // we try trigger the actual write. Otherwise this will be handled by
         // the writeAndFlushNextMessageIfPossible calls.
         boolean triggerWrite = availableReaders.isEmpty();
-        registerAvailableReader(reader);
+        registerAvailableReader(reader, availabilityWithBacklog.getBacklog());
 
         if (triggerWrite) {
             writeAndFlushNextMessageIfPossible(ctx.channel());
@@ -133,7 +157,9 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
      */
     @VisibleForTesting
     ArrayDeque<NetworkSequenceViewReader> getAvailableReaders() {
-        return availableReaders;
+        return availableReaders.stream()
+                .map(n -> n.reader)
+                .collect(Collectors.toCollection(ArrayDeque::new));
     }
 
     public void notifyReaderCreated(final NetworkSequenceViewReader reader) {
@@ -237,7 +263,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
             InputChannelID toCancel = (InputChannelID) msg;
 
             // remove reader from queue of available readers
-            availableReaders.removeIf(reader -> reader.getReceiverId().equals(toCancel));
+            availableReaders.removeIf(reader -> reader.reader.getReceiverId().equals(toCancel));
 
             // remove reader from queue of all readers and release its resource
             final NetworkSequenceViewReader toRelease = allReaders.remove(toCancel);
@@ -292,7 +318,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
                     // This channel was now removed from the available reader queue.
                     // We re-add it into the queue if it is still available
                     if (next.moreAvailable()) {
-                        registerAvailableReader(reader);
+                        registerAvailableReader(reader, next.buffersInBacklog());
                     }
 
                     BufferResponse msg =
@@ -318,18 +344,20 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void registerAvailableReader(NetworkSequenceViewReader reader) {
-        availableReaders.add(reader);
+    int globalId = 0;
+
+    private void registerAvailableReader(NetworkSequenceViewReader reader, int backlog) {
+        availableReaders.add(new ReaderNode(reader, backlog, globalId++));
         reader.setRegisteredAsAvailable(true);
     }
 
     @Nullable
     private NetworkSequenceViewReader pollAvailableReader() {
-        NetworkSequenceViewReader reader = availableReaders.poll();
+        ReaderNode reader = availableReaders.poll();
         if (reader != null) {
-            reader.setRegisteredAsAvailable(false);
+            reader.reader.setRegisteredAsAvailable(false);
         }
-        return reader;
+        return reader.reader;
     }
 
     @Override
