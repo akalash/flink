@@ -84,7 +84,7 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
 
         @Override
         public int compareTo(ReaderNode o) {
-            int compare = Integer.compare(this.backlog, o.backlog);
+            int compare = Integer.compare(o.backlog, this.backlog);
             if (compare == 0) {
                 return Long.compare(this.id, o.id);
             }
