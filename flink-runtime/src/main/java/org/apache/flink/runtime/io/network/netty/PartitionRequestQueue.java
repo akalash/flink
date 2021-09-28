@@ -356,10 +356,8 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
         ReaderNode reader = availableReaders.poll();
         if (reader != null) {
             reader.reader.setRegisteredAsAvailable(false);
-
-            return reader.reader;
         }
-        return null;
+        return reader.reader;
     }
 
     @Override
