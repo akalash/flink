@@ -184,10 +184,7 @@ public class PipelinedSubpartition extends ResultSubpartition
             BufferConsumerWithPartialRecordLength bufferConsumerWithPartialRecordLength =
                     buffers.peekLast();
             if (bufferConsumerWithPartialRecordLength != null) {
-
-                Buffer buffer = buildSliceBuffer(bufferConsumerWithPartialRecordLength);
-                totalNumberOfBytesInQueue += buffer.getSize();
-                buffer.recycleBuffer();
+                totalNumberOfBytesInQueue += bufferConsumerWithPartialRecordLength.position();
             }
 
             // Add the bufferConsumer and update the stats

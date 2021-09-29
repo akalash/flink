@@ -69,6 +69,10 @@ public class BufferConsumerWithPartialRecordLength {
         return bufferConsumer.build();
     }
 
+    public int position() {
+        return bufferConsumer.position();
+    }
+
     public boolean cleanupPartialRecord() {
 
         checkState(
