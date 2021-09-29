@@ -105,6 +105,8 @@ public class PipelinedSubpartition extends ResultSubpartition
     /** The total number of bytes (both data and event buffers). */
     private long totalNumberOfBytes;
 
+    private long totalNumberOfBytesInQueue;
+
     /** Writes in-flight data. */
     private ChannelStateWriter channelStateWriter;
 
@@ -177,6 +179,12 @@ public class PipelinedSubpartition extends ResultSubpartition
             if (isFinished || isReleased) {
                 bufferConsumer.close();
                 return -1;
+            }
+
+            BufferConsumerWithPartialRecordLength bufferConsumerWithPartialRecordLength =
+                    buffers.peekLast();
+            if (bufferConsumerWithPartialRecordLength != null) {
+                totalNumberOfBytesInQueue += bufferConsumerWithPartialRecordLength.position();
             }
 
             // Add the bufferConsumer and update the stats
@@ -327,6 +335,9 @@ public class PipelinedSubpartition extends ResultSubpartition
                 if (bufferConsumer.isFinished()) {
                     requireNonNull(buffers.poll()).getBufferConsumer().close();
                     decreaseBuffersInBacklogUnsafe(bufferConsumer.isBuffer());
+                    if (!buffers.isEmpty()) {
+                        totalNumberOfBytesInQueue -= buffer.getSize();
+                    }
                 }
 
                 // if we have an empty finished buffer and the exclusive credit is 0, we just return
@@ -519,6 +530,16 @@ public class PipelinedSubpartition extends ResultSubpartition
     @Override
     protected long getTotalNumberOfBuffers() {
         return totalNumberOfBuffers;
+    }
+
+    protected long getTotalBuffersSize() {
+        synchronized (buffers) {
+            long total = 0;
+            for (BufferConsumerWithPartialRecordLength buffer : buffers) {
+                total += buffer.position();
+            }
+            return total;
+        }
     }
 
     @Override

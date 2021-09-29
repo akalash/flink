@@ -63,6 +63,8 @@ public interface ResultSubpartitionView {
 
     int getNumberOfQueuedBuffers();
 
+    long getTotalBuffersSize();
+
     void notifyNewBufferSize(int newBufferSize);
 
     /**

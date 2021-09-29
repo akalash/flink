@@ -156,6 +156,11 @@ public class BufferDebloaterTest extends TestLogger {
         }
 
         @Override
+        public long getTotalBuffersSize() {
+            return bufferInUseCount;
+        }
+
+        @Override
         public void announceBufferSize(int bufferSize) {
             lastBufferSize = bufferSize;
         }

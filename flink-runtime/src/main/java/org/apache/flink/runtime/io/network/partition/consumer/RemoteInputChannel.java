@@ -113,6 +113,8 @@ public class RemoteInputChannel extends InputChannel {
 
     private final ChannelStatePersister channelStatePersister;
 
+    private long totalSize;
+
     public RemoteInputChannel(
             SingleInputGate inputGate,
             int channelIndex,
@@ -216,6 +218,9 @@ public class RemoteInputChannel extends InputChannel {
                     receivedBuffers.peek() != null
                             ? receivedBuffers.peek().buffer.getDataType()
                             : DataType.NONE;
+            if (next != null) {
+                totalSize -= next.buffer.getSize();
+            }
         }
 
         if (next == null) {
@@ -291,6 +296,13 @@ public class RemoteInputChannel extends InputChannel {
     int getBuffersInUseCount() {
         return getNumberOfQueuedBuffers()
                 + Math.max(0, bufferManager.getNumberOfRequiredBuffers() - initialCredit);
+    }
+
+    @Override
+    public long getTotalBuffersSize() {
+        synchronized (receivedBuffers) {
+            return totalSize;
+        }
     }
 
     @Override
@@ -538,6 +550,7 @@ public class RemoteInputChannel extends InputChannel {
                 wasEmpty = receivedBuffers.isEmpty();
 
                 SequenceBuffer sequenceBuffer = new SequenceBuffer(buffer, sequenceNumber);
+                totalSize += buffer.getSize();
                 DataType dataType = buffer.getDataType();
                 if (dataType.hasPriority()) {
                     firstPriorityEvent = addPriorityBuffer(sequenceBuffer);

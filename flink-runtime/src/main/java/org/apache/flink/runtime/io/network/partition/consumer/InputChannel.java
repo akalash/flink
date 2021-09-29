@@ -216,6 +216,8 @@ public abstract class InputChannel {
 
     abstract int getBuffersInUseCount();
 
+    public abstract long getTotalBuffersSize();
+
     // ------------------------------------------------------------------------
     // Error notification
     // ------------------------------------------------------------------------

@@ -380,6 +380,15 @@ public class SingleInputGate extends IndexedInputGate {
         for (InputChannel channel : channels) {
             total += Math.max(1, channel.getBuffersInUseCount());
         }
+        return Math.max(1, total);
+    }
+
+    @Override
+    public long getTotalBuffersSize() {
+        int total = 0;
+        for (InputChannel channel : channels) {
+            total += channel.getTotalBuffersSize();
+        }
         return total;
     }
 

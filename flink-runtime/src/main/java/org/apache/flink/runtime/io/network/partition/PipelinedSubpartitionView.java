@@ -105,6 +105,11 @@ public class PipelinedSubpartitionView implements ResultSubpartitionView {
     }
 
     @Override
+    public long getTotalBuffersSize() {
+        return parent.getTotalBuffersSize();
+    }
+
+    @Override
     public void notifyNewBufferSize(int newBufferSize) {
         parent.bufferSize(newBufferSize);
     }
