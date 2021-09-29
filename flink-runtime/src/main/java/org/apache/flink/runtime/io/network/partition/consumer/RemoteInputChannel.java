@@ -139,7 +139,8 @@ public class RemoteInputChannel extends InputChannel {
         this.initialCredit = networkBuffersPerChannel;
         this.connectionId = checkNotNull(connectionId);
         this.connectionManager = checkNotNull(connectionManager);
-        this.bufferManager = new BufferManager(inputGate.getMemorySegmentProvider(), this, 0);
+        this.bufferManager =
+                new BufferManager(inputGate.getMemorySegmentProvider(), this, 0, initialCredit);
         this.channelStatePersister = new ChannelStatePersister(stateWriter, getChannelInfo());
     }
 
@@ -289,8 +290,7 @@ public class RemoteInputChannel extends InputChannel {
 
     @Override
     public int getBuffersInUseCount() {
-        return getNumberOfQueuedBuffers()
-                + Math.max(0, bufferManager.getNumberOfRequiredBuffers() - initialCredit);
+        return bufferManager.getNumberOfRequestedBuffers();
     }
 
     @Override
@@ -497,7 +497,7 @@ public class RemoteInputChannel extends InputChannel {
      * @param backlog The number of unsent buffers in the producer's sub partition.
      */
     public void onSenderBacklog(int backlog) throws IOException {
-        notifyBufferAvailable(bufferManager.requestFloatingBuffers(backlog + initialCredit));
+        notifyBufferAvailable(bufferManager.requestFloatingBuffers(backlog));
     }
 
     /**

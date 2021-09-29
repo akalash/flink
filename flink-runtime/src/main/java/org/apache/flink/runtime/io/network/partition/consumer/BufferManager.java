@@ -70,11 +70,18 @@ public class BufferManager implements BufferListener, BufferRecycler {
     @GuardedBy("bufferQueue")
     private int numRequiredBuffers;
 
+    private final int initialCredit;
+    private int requestedBuffers;
+
     public BufferManager(
-            MemorySegmentProvider globalPool, InputChannel inputChannel, int numRequiredBuffers) {
+            MemorySegmentProvider globalPool,
+            InputChannel inputChannel,
+            int numRequiredBuffers,
+            int initialCredit) {
 
         this.globalPool = checkNotNull(globalPool);
         this.inputChannel = checkNotNull(inputChannel);
+        this.initialCredit = initialCredit;
         checkArgument(numRequiredBuffers >= 0);
         this.numRequiredBuffers = numRequiredBuffers;
     }
@@ -161,8 +168,11 @@ public class BufferManager implements BufferListener, BufferRecycler {
      * register as a listener.
      */
     int requestFloatingBuffers(int numRequired) {
+
         int numRequestedBuffers = 0;
         synchronized (bufferQueue) {
+            requestedBuffers += numRequired;
+            numRequired += initialCredit;
             // Similar to notifyBufferAvailable(), make sure that we never add a buffer after
             // channel
             // released all buffers via releaseAllResources().
@@ -370,6 +380,14 @@ public class BufferManager implements BufferListener, BufferRecycler {
     int getNumberOfRequiredBuffers() {
         synchronized (bufferQueue) {
             return numRequiredBuffers;
+        }
+    }
+
+    int getNumberOfRequestedBuffers() {
+        synchronized (bufferQueue) {
+            int requestedBuffers = this.requestedBuffers;
+            this.requestedBuffers = 0;
+            return requestedBuffers;
         }
     }
 

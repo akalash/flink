@@ -344,9 +344,14 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
         subpartitionView.notifyNewBufferSize(newBufferSize);
     }
 
+    long previousTotalBuffers = 0;
+
     @Override
     public int getBuffersInUseCount() {
-        return subpartitionView.getNumberOfQueuedBuffers();
+        long numberOfQueuedBuffers = subpartitionView.getNumberOfQueuedBuffers();
+        int res = (int) (numberOfQueuedBuffers - previousTotalBuffers);
+        previousTotalBuffers = numberOfQueuedBuffers;
+        return res;
     }
 
     @Override

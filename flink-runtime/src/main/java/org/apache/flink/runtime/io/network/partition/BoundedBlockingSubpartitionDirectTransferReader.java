@@ -154,7 +154,7 @@ public class BoundedBlockingSubpartitionDirectTransferReader implements ResultSu
     }
 
     @Override
-    public int getNumberOfQueuedBuffers() {
+    public long getNumberOfQueuedBuffers() {
         return parent.getNumberOfQueuedBuffers();
     }
 

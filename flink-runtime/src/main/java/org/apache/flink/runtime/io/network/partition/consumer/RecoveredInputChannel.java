@@ -90,7 +90,7 @@ public abstract class RecoveredInputChannel extends InputChannel implements Chan
                 numBytesIn,
                 numBuffersIn);
 
-        bufferManager = new BufferManager(inputGate.getMemorySegmentProvider(), this, 0);
+        bufferManager = new BufferManager(inputGate.getMemorySegmentProvider(), this, 0, 0);
         this.networkBuffersPerChannel = networkBuffersPerChannel;
     }
 

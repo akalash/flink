@@ -237,7 +237,7 @@ class SortMergeSubpartitionReader
     }
 
     @Override
-    public int getNumberOfQueuedBuffers() {
+    public long getNumberOfQueuedBuffers() {
         synchronized (lock) {
             return buffersRead.size();
         }

@@ -242,7 +242,7 @@ public class CancelPartitionRequestTest {
         }
 
         @Override
-        public int getNumberOfQueuedBuffers() {
+        public long getNumberOfQueuedBuffers() {
             return 0;
         }
 

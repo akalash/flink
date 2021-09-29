@@ -518,7 +518,9 @@ public class PipelinedSubpartition extends ResultSubpartition
 
     @Override
     protected long getTotalNumberOfBuffers() {
-        return totalNumberOfBuffers;
+        synchronized (buffers) {
+            return totalNumberOfBuffers;
+        }
     }
 
     @Override
