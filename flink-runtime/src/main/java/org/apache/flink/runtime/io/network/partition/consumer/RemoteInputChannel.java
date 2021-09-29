@@ -294,6 +294,11 @@ public class RemoteInputChannel extends InputChannel {
     }
 
     @Override
+    public long getTotalBuffersSize() {
+        return bufferManager.getNumberOfRequestedBuffers();
+    }
+
+    @Override
     void announceBufferSize(int newBufferSize) {
         try {
             notifyNewBufferSize(newBufferSize);

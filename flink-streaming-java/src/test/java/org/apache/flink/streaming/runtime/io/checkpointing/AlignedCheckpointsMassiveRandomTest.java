@@ -246,6 +246,11 @@ public class AlignedCheckpointsMassiveRandomTest {
         }
 
         @Override
+        public long getTotalBuffersSize() {
+            return 0;
+        }
+
+        @Override
         public void announceBufferSize(int bufferSize) {}
 
         public void acknowledgeAllRecordsProcessed(InputChannelInfo channelInfo)

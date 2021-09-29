@@ -215,6 +215,11 @@ public class TestInputChannel extends InputChannel {
     }
 
     @Override
+    public long getTotalBuffersSize() {
+        return buffers.size();
+    }
+
+    @Override
     public void resumeConsumption() {
         isBlocked = false;
         if (actionOnResumed != null) {

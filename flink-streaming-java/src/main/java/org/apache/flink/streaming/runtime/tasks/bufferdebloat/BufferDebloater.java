@@ -96,13 +96,23 @@ public class BufferDebloater {
         //        for (IndexedInputGate inputGate : inputGates) {
         //            totalNumber += Math.max(1, inputGate.getBuffersInUseCount());
         //        }
+        long totalBufferSize = 0;
+        for (IndexedInputGate inputGate : inputGates) {
+            totalBufferSize += inputGate.getTotalBuffersSize();
+        }
+        double factor =
+                totalBufferSize == 0
+                        ? 2.0
+                        : ((double) desiredTotalBufferSizeInBytes) / totalBufferSize;
+        //        int newSize =
+        //                (int)
+        //                        Math.max(
+        //                                minBufferSize,
+        //                                Math.min(
+        //                                        desiredTotalBufferSizeInBytes / totalNumber,
+        //                                        maxBufferSize));
         int newSize =
-                (int)
-                        Math.max(
-                                minBufferSize,
-                                Math.min(
-                                        desiredTotalBufferSizeInBytes / totalNumber,
-                                        maxBufferSize));
+                (int) Math.max(minBufferSize, Math.min(lastBufferSize * factor, maxBufferSize));
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
                         newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));

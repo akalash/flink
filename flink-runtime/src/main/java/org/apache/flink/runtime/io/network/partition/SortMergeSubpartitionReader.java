@@ -244,5 +244,10 @@ class SortMergeSubpartitionReader
     }
 
     @Override
+    public long getTotalBuffersSize() {
+        return 0;
+    }
+
+    @Override
     public void notifyNewBufferSize(int newBufferSize) {}
 }

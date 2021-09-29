@@ -385,6 +385,15 @@ public class SingleInputGate extends IndexedInputGate {
     }
 
     @Override
+    public long getTotalBuffersSize() {
+        int total = 0;
+        for (InputChannel channel : channels) {
+            total += channel.getTotalBuffersSize();
+        }
+        return Math.max(1, total);
+    }
+
+    @Override
     public void announceBufferSize(int newBufferSize) {
         for (InputChannel channel : channels) {
             channel.announceBufferSize(newBufferSize);
