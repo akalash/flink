@@ -103,7 +103,7 @@ public class BufferDebloater {
         double factor =
                 totalBufferSize == 0
                         ? 2.0
-                        : ((double) desiredTotalBufferSizeInBytes) / totalBufferSize;
+                        : ((double) desiredTotalBufferSizeInBytes * 2) / totalBufferSize;
         //        int newSize =
         //                (int)
         //                        Math.max(
@@ -111,7 +111,7 @@ public class BufferDebloater {
         //                                Math.min(
         //                                        desiredTotalBufferSizeInBytes / totalNumber,
         //                                        maxBufferSize));
-        double size = (lastBufferSize * factor) * 1.5;
+        double size = (lastBufferSize * factor);
         int newSize = (int) Math.max(minBufferSize, Math.min(size, maxBufferSize));
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
