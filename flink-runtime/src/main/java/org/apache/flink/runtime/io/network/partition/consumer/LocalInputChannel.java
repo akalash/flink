@@ -356,7 +356,7 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
 
     @Override
     public long getTotalBuffersSize() {
-        return 0;
+        return subpartitionView.getTotalBuffersSize();
     }
 
     @Override

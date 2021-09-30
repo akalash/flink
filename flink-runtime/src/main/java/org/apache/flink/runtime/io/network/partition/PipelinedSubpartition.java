@@ -536,7 +536,11 @@ public class PipelinedSubpartition extends ResultSubpartition
 
     protected long getTotalBuffersSize() {
         synchronized (buffers) {
-            return totalNumberOfBytesInQueue;
+            long total = 0;
+            for (BufferConsumerWithPartialRecordLength buffer : buffers) {
+                total += buffer.position();
+            }
+            return total;
         }
     }
 
