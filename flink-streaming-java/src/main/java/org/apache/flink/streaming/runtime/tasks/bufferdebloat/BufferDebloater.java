@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 
+import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_SAMPLES;
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_TARGET;
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_THRESHOLD_PERCENTAGES;
 import static org.apache.flink.util.Preconditions.checkArgument;
@@ -54,6 +55,7 @@ public class BufferDebloater {
     private ArrayList<Tuple5<Long, Long, Long, Integer, Boolean>> throughputs =
             new ArrayList<>(NUMBER_TO_LOG);
     private final int total;
+    private final double alpha;
 
     public BufferDebloater(Configuration taskConfig, IndexedInputGate[] inputGates) {
         this.inputGates = inputGates;
@@ -70,6 +72,8 @@ public class BufferDebloater {
 
         this.bufferDebloatThresholdPercentages =
                 taskConfig.getInteger(BUFFER_DEBLOAT_THRESHOLD_PERCENTAGES);
+
+        alpha = 2.0 / (taskConfig.get(BUFFER_DEBLOAT_SAMPLES) + 1);
 
         this.lastBufferSize = (int) maxBufferSize;
 
@@ -103,7 +107,7 @@ public class BufferDebloater {
         double factor =
                 totalBufferSize == 0
                         ? 2.0
-                        : ((double) desiredTotalBufferSizeInBytes * 2) / totalBufferSize;
+                        : ((double) desiredTotalBufferSizeInBytes) / totalBufferSize;
         //        int newSize =
         //                (int)
         //                        Math.max(
@@ -111,8 +115,9 @@ public class BufferDebloater {
         //                                Math.min(
         //                                        desiredTotalBufferSizeInBytes / totalNumber,
         //                                        maxBufferSize));
-        double size = (lastBufferSize * factor);
-        int newSize = (int) Math.max(minBufferSize, Math.min(size, maxBufferSize));
+        int size = (int) (lastBufferSize * factor);
+        int newSize = (int) (lastBufferSize + alpha * (size - lastBufferSize));
+        newSize = (int) Math.max(minBufferSize, Math.min(newSize, maxBufferSize));
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
                         newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));
