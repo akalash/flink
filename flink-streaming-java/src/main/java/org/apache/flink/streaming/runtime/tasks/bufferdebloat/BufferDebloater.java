@@ -50,6 +50,7 @@ public class BufferDebloater {
     private final int bufferDebloatThresholdPercentages;
 
     private int lastBufferSize;
+    private int lastCalculatedBufferSize;
     private Duration lastEstimatedTimeToConsumeBuffers = Duration.ZERO;
     public static final int NUMBER_TO_LOG = 100;
     private ArrayList<Tuple5<Long, Long, Long, Integer, Boolean>> throughputs =
@@ -116,8 +117,9 @@ public class BufferDebloater {
         //                                        desiredTotalBufferSizeInBytes / totalNumber,
         //                                        maxBufferSize));
         int size = (int) (lastBufferSize * factor);
-        int newSize = (int) (lastBufferSize + alpha * (size - lastBufferSize));
-        newSize = (int) Math.max(minBufferSize, Math.min(newSize, maxBufferSize));
+        int newSize = (int) (lastCalculatedBufferSize + alpha * (size - lastCalculatedBufferSize));
+        lastCalculatedBufferSize = (int) Math.max(minBufferSize, Math.min(newSize, maxBufferSize));
+        newSize = lastCalculatedBufferSize;
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
                         newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));
