@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.runtime.tasks.bufferdebloat;
 
-import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
@@ -51,7 +51,7 @@ public class BufferDebloater {
     private int lastBufferSize;
     private Duration lastEstimatedTimeToConsumeBuffers = Duration.ZERO;
     public static final int NUMBER_TO_LOG = 100;
-    private ArrayList<Tuple4<Long, Long, Integer, Boolean>> throughputs =
+    private ArrayList<Tuple5<Long, Long, Long, Integer, Boolean>> throughputs =
             new ArrayList<>(NUMBER_TO_LOG);
     private final int total;
 
@@ -85,7 +85,7 @@ public class BufferDebloater {
     public void recalculateBufferSize(long currentThroughput, long instantThroughput) {
         if (currentThroughput == 0) {
             throughputs.add(
-                    new Tuple4<>(instantThroughput, currentThroughput, lastBufferSize, true));
+                    new Tuple5<>(instantThroughput, currentThroughput, -1L, lastBufferSize, true));
             return;
         }
 
@@ -123,7 +123,13 @@ public class BufferDebloater {
                         && Math.abs(1 - ((double) lastBufferSize) / newSize) * 100
                                 < bufferDebloatThresholdPercentages;
 
-        throughputs.add(new Tuple4<>(instantThroughput, currentThroughput, newSize, skipUpdate));
+        throughputs.add(
+                new Tuple5<>(
+                        instantThroughput,
+                        currentThroughput,
+                        totalBufferSize,
+                        newSize,
+                        skipUpdate));
         if (throughputs.size() >= NUMBER_TO_LOG) {
             LOG.info(
                     "THROUGHPUT_RES :: "
