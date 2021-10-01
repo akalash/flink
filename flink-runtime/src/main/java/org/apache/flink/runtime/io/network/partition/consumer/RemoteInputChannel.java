@@ -462,7 +462,7 @@ public class RemoteInputChannel extends InputChannel {
 
     @Override
     public int unsynchronizedGetNumberOfQueuedBuffers() {
-        return Math.max(0, receivedBuffers.size());
+        return getNumberOfQueuedBuffers();
     }
 
     public int unsynchronizedGetExclusiveBuffersUsed() {
