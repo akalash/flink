@@ -711,7 +711,6 @@ public class SingleInputGate extends IndexedInputGate {
             synchronized (inputChannelsWithData) {
                 Optional<InputChannel> inputChannelOpt = getChannel(blocking);
                 if (!inputChannelOpt.isPresent()) {
-                    numIdle.inc();
                     return Optional.empty();
                 }
 
@@ -1005,6 +1004,11 @@ public class SingleInputGate extends IndexedInputGate {
         assert Thread.holdsLock(inputChannelsWithData);
 
         if (inputChannelsWithData.isEmpty()) {
+            int total = 0;
+            for (InputChannel value : inputChannels.values()) {
+                total += value.unsynchronizedGetNumberOfQueuedBuffers();
+            }
+            numIdle.inc(total);
             inputChannelsWithData.wait(10);
         }
         while (inputChannelsWithData.isEmpty()) {
