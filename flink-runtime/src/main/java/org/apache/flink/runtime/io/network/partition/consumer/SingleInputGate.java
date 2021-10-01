@@ -1004,6 +1004,9 @@ public class SingleInputGate extends IndexedInputGate {
     private Optional<InputChannel> getChannel(boolean blocking) throws InterruptedException {
         assert Thread.holdsLock(inputChannelsWithData);
 
+        if (inputChannelsWithData.isEmpty()) {
+            inputChannelsWithData.wait(10);
+        }
         while (inputChannelsWithData.isEmpty()) {
             if (closeFuture.isDone()) {
                 throw new IllegalStateException("Released");
