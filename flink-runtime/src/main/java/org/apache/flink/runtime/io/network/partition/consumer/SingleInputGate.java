@@ -1008,8 +1008,10 @@ public class SingleInputGate extends IndexedInputGate {
             for (InputChannel value : inputChannels.values()) {
                 total += value.unsynchronizedGetNumberOfQueuedBuffers();
             }
-            numIdle.inc(total);
-            inputChannelsWithData.wait(10);
+            inputChannelsWithData.wait(5);
+            if (inputChannelsWithData.isEmpty()) {
+                numIdle.inc(total);
+            }
         }
         while (inputChannelsWithData.isEmpty()) {
             if (closeFuture.isDone()) {
