@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.io.network.partition.consumer;
 
 import org.apache.flink.core.memory.MemorySegmentProvider;
+import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
 import org.apache.flink.runtime.io.network.NettyShuffleEnvironment;
 import org.apache.flink.runtime.io.network.buffer.BufferDecompressor;
@@ -145,7 +146,8 @@ public class SingleInputGateBuilder {
                         bufferPoolFactory,
                         bufferDecompressor,
                         segmentProvider,
-                        bufferSize);
+                        bufferSize,
+                        new SimpleCounter());
         if (channelFactory != null) {
             gate.setInputChannels(
                     IntStream.range(0, numberOfChannels)

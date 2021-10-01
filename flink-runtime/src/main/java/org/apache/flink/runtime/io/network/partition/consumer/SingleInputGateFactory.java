@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.io.network.partition.consumer;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.deployment.InputGateDeploymentDescriptor;
 import org.apache.flink.runtime.io.network.ConnectionManager;
@@ -106,7 +107,8 @@ public class SingleInputGateFactory {
             int gateIndex,
             @Nonnull InputGateDeploymentDescriptor igdd,
             @Nonnull PartitionProducerStateProvider partitionProducerStateProvider,
-            @Nonnull InputChannelMetrics metrics) {
+            @Nonnull InputChannelMetrics metrics,
+            Counter numIdle) {
         SupplierWithException<BufferPool, IOException> bufferPoolFactory =
                 createBufferPoolFactory(networkBufferPool, floatingNetworkBuffersPerGate);
 
@@ -127,7 +129,8 @@ public class SingleInputGateFactory {
                         bufferPoolFactory,
                         bufferDecompressor,
                         networkBufferPool,
-                        networkBufferSize);
+                        networkBufferSize,
+                        numIdle);
 
         createInputChannels(owningTaskName, igdd, inputGate, metrics);
         return inputGate;

@@ -19,6 +19,8 @@
 package org.apache.flink.runtime.io.network;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.metrics.Counter;
+import org.apache.flink.metrics.MeterView;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.deployment.InputGateDeploymentDescriptor;
@@ -252,6 +254,9 @@ public class NettyShuffleEnvironment
             InputChannelMetrics inputChannelMetrics =
                     new InputChannelMetrics(networkInputGroup, ownerContext.getParentGroup());
 
+            Counter numIdle = networkInputGroup.counter("numIdle");
+            networkInputGroup.meter("numIdlePerSecond", new MeterView(numIdle));
+
             SingleInputGate[] inputGates =
                     new SingleInputGate[inputGateDeploymentDescriptors.size()];
             for (int gateIndex = 0; gateIndex < inputGates.length; gateIndex++) {
@@ -263,7 +268,8 @@ public class NettyShuffleEnvironment
                                 gateIndex,
                                 igdd,
                                 partitionProducerStateProvider,
-                                inputChannelMetrics);
+                                inputChannelMetrics,
+                                numIdle);
                 InputGateID id =
                         new InputGateID(
                                 igdd.getConsumedResultId(), ownerContext.getExecutionAttemptID());

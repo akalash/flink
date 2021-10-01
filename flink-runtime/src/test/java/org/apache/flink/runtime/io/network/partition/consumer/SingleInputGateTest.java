@@ -20,6 +20,7 @@ package org.apache.flink.runtime.io.network.partition.consumer;
 
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.core.memory.MemorySegmentFactory;
+import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
@@ -556,7 +557,8 @@ public class SingleInputGateTest extends InputGateTestBase {
                                 0,
                                 gateDesc,
                                 SingleInputGateBuilder.NO_OP_PRODUCER_CHECKER,
-                                InputChannelTestUtils.newUnregisteredInputChannelMetrics());
+                                InputChannelTestUtils.newUnregisteredInputChannelMetrics(),
+                                new SimpleCounter());
         gate.setChannelStateWriter(ChannelStateWriter.NO_OP);
 
         gate.finishReadRecoveredState();

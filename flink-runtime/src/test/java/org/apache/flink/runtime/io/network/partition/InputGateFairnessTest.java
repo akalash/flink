@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.io.network.partition;
 
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.runtime.io.network.ConnectionManager;
 import org.apache.flink.runtime.io.network.api.EndOfPartitionEvent;
 import org.apache.flink.runtime.io.network.api.serialization.EventSerializer;
@@ -393,7 +394,8 @@ public class InputGateFairnessTest {
                     STUB_BUFFER_POOL_FACTORY,
                     null,
                     new UnpooledMemorySegmentProvider(BUFFER_SIZE),
-                    BUFFER_SIZE);
+                    BUFFER_SIZE,
+                    new SimpleCounter());
 
             channelsWithData = getInputChannelsWithData();
 

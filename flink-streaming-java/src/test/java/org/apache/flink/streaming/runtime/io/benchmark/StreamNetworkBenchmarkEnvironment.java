@@ -271,7 +271,8 @@ public class StreamNetworkBenchmarkEnvironment<T extends IOReadableWritable> {
                         gateIndex,
                         gateDescriptor,
                         SingleInputGateBuilder.NO_OP_PRODUCER_CHECKER,
-                        InputChannelTestUtils.newUnregisteredInputChannelMetrics());
+                        InputChannelTestUtils.newUnregisteredInputChannelMetrics(),
+                        new SimpleCounter());
 
         return new InputGateWithMetrics(
                 singleGate,

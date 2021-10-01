@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.core.memory.MemorySegmentFactory;
 import org.apache.flink.core.memory.MemorySegmentProvider;
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.runtime.checkpoint.channel.InputChannelInfo;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.event.AbstractEvent;
@@ -197,6 +198,8 @@ public class SingleInputGate extends IndexedInputGate {
 
     private final MemorySegmentProvider memorySegmentProvider;
 
+    private final Counter numIdle;
+
     /**
      * The segment to read data from file region of bounded blocking partition by local input
      * channel.
@@ -214,8 +217,9 @@ public class SingleInputGate extends IndexedInputGate {
             SupplierWithException<BufferPool, IOException> bufferPoolFactory,
             @Nullable BufferDecompressor bufferDecompressor,
             MemorySegmentProvider memorySegmentProvider,
-            int segmentSize) {
-
+            int segmentSize,
+            Counter numIdle) {
+        this.numIdle = numIdle;
         this.owningTaskName = checkNotNull(owningTaskName);
         Preconditions.checkArgument(0 <= gateIndex, "The gate index must be positive.");
         this.gateIndex = gateIndex;
@@ -707,6 +711,7 @@ public class SingleInputGate extends IndexedInputGate {
             synchronized (inputChannelsWithData) {
                 Optional<InputChannel> inputChannelOpt = getChannel(blocking);
                 if (!inputChannelOpt.isPresent()) {
+                    numIdle.inc();
                     return Optional.empty();
                 }
 
