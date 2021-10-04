@@ -739,6 +739,8 @@ public class SingleInputGate extends IndexedInputGate {
                     }
                 }
 
+                numIdle.inc();
+
                 checkUnavailability();
 
                 return Optional.of(
@@ -1004,14 +1006,14 @@ public class SingleInputGate extends IndexedInputGate {
         assert Thread.holdsLock(inputChannelsWithData);
 
         if (inputChannelsWithData.isEmpty()) {
-            int total = 0;
-            for (InputChannel value : inputChannels.values()) {
-                total += value.unsynchronizedGetNumberOfQueuedBuffers();
-            }
+            //            int total = 0;
+            //            for (InputChannel value : inputChannels.values()) {
+            //                total += value.unsynchronizedGetNumberOfQueuedBuffers();
+            //            }
             inputChannelsWithData.wait(5);
-            if (inputChannelsWithData.isEmpty()) {
-                numIdle.inc(total);
-            }
+            //            if (inputChannelsWithData.isEmpty()) {
+            //                numIdle.inc(total);
+            //            }
         }
         while (inputChannelsWithData.isEmpty()) {
             if (closeFuture.isDone()) {
