@@ -755,7 +755,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         // final check to exit early before starting to run
         ensureNotCanceled();
 
-        scheduleBufferDebloater();
+        scheduleBufferDebloater(10_000);
 
         // let the task do its work
         runMailboxLoop();
@@ -767,7 +767,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         afterInvoke();
     }
 
-    private void scheduleBufferDebloater() {
+    private void scheduleBufferDebloater(long delay) {
         // See https://issues.apache.org/jira/browse/FLINK-23560
         // If there are no input gates, there is no point of calculating the throughput and running
         // the debloater. At the same time, for SourceStreamTask using legacy sources and checkpoint
@@ -777,12 +777,12 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             return;
         }
         systemTimerService.registerTimer(
-                systemTimerService.getCurrentProcessingTime() + bufferDebloatPeriod,
+                systemTimerService.getCurrentProcessingTime() + delay,
                 timestamp ->
                         mainMailboxExecutor.submit(
                                 () -> {
                                     debloat();
-                                    scheduleBufferDebloater();
+                                    scheduleBufferDebloater(bufferDebloatPeriod);
                                 },
                                 "Buffer size recalculation"));
     }
