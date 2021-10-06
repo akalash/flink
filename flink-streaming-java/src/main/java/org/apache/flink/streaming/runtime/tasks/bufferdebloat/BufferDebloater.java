@@ -77,6 +77,7 @@ public class BufferDebloater {
         if (currentThroughput == 0) {
             throughputs.add(
                     new Tuple4<>(instantThroughput, currentThroughput, lastBufferSize, true));
+            print();
             return;
         }
 
@@ -105,15 +106,7 @@ public class BufferDebloater {
                                 < bufferDebloatThresholdPercentages;
 
         throughputs.add(new Tuple4<>(instantThroughput, currentThroughput, newSize, skipUpdate));
-        if (throughputs.size() >= NUMBER_TO_LOG) {
-            LOG.info(
-                    "THROUGHPUT_RES :: "
-                            + Thread.currentThread().getName()
-                            + " :: "
-                            + throughputs.toString());
-
-            throughputs.clear();
-        }
+        print();
 
         // Skip update if the new value pretty close to the old one.
         if (skipUpdate) {
@@ -123,6 +116,18 @@ public class BufferDebloater {
         lastBufferSize = newSize;
         for (IndexedInputGate inputGate : inputGates) {
             inputGate.announceBufferSize(newSize);
+        }
+    }
+
+    private void print() {
+        if (throughputs.size() >= NUMBER_TO_LOG) {
+            LOG.info(
+                    "THROUGHPUT_RES :: "
+                            + Thread.currentThread().getName()
+                            + " :: "
+                            + throughputs.toString());
+
+            throughputs.clear();
         }
     }
 
