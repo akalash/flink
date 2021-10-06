@@ -132,13 +132,15 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
 
     @Override
     public void notifyNewBufferSize(final RemoteInputChannel inputChannel, int bufferSize) {
-        ctx.executor()
-                .execute(
-                        () ->
-                                ctx.pipeline()
-                                        .fireUserEventTriggered(
-                                                new NewBufferSizeMessage(
-                                                        inputChannel, bufferSize)));
+        if (ctx != null) {
+            ctx.executor()
+                    .execute(
+                            () ->
+                                    ctx.pipeline()
+                                            .fireUserEventTriggered(
+                                                    new NewBufferSizeMessage(
+                                                            inputChannel, bufferSize)));
+        }
     }
 
     @Override
