@@ -132,7 +132,7 @@ public class BufferDebloaterTest extends TestLogger {
                         inputGates);
 
         // when: Buffer size is calculated.
-        bufferDebloater.recalculateBufferSize(throughput, 0);
+        bufferDebloater.recalculateBufferSize(throughput);
 
         // then: Buffer size is in all gates should be as expected.
         for (int i = 0; i < numberOfGates; i++) {

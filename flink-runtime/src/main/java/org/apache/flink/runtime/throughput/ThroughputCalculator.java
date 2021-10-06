@@ -84,8 +84,4 @@ public class ThroughputCalculator {
 
         return throughput;
     }
-
-    public long instantThroughput() {
-        return throughputEMA.getInstantThroughput();
-    }
 }
