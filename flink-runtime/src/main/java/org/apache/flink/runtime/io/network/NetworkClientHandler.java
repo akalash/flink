@@ -26,9 +26,12 @@ import org.apache.flink.shaded.netty4.io.netty.channel.ChannelHandler;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 /** Channel handler to read and write network messages on client side. */
 public interface NetworkClientHandler extends ChannelHandler {
+
+    void waitForChannelReadiness() throws ExecutionException, InterruptedException;
 
     void addInputChannel(RemoteInputChannel inputChannel) throws IOException;
 

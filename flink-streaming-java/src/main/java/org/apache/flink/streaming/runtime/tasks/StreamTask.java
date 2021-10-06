@@ -791,7 +791,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
     void debloat() {
         long throughput = throughputCalculator.calculateThroughput();
         if (bufferDebloater != null) {
-            bufferDebloater.recalculateBufferSize(throughput);
+            try {
+                bufferDebloater.recalculateBufferSize(throughput);
+            } catch (Throwable ex) {
+                LOG.error("Buffer debloater fails, try at next time.", ex);
+            }
         }
     }
 

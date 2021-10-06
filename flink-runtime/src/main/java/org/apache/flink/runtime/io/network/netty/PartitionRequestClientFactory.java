@@ -136,6 +136,7 @@ class PartitionRequestClientFactory {
             // waits for this future to be completed, without throwing the error.
             Channel channel = nettyClient.connect(connectionId.getAddress()).sync().channel();
             NetworkClientHandler clientHandler = channel.pipeline().get(NetworkClientHandler.class);
+            clientHandler.waitForChannelReadiness();
             return new NettyPartitionRequestClient(channel, clientHandler, connectionId, this);
         } catch (InterruptedException e) {
             throw e;

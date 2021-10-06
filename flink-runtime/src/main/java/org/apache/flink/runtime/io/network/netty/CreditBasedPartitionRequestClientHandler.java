@@ -44,8 +44,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -88,9 +90,20 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
      */
     private volatile ChannelHandlerContext ctx;
 
+    private final CompletableFuture<Void> channelReadiness = new CompletableFuture<>();
+
     // ------------------------------------------------------------------------
     // Input channel/receiver registration
     // ------------------------------------------------------------------------
+
+    @Override
+    public void waitForChannelReadiness() throws ExecutionException, InterruptedException {
+        if (ctx != null) {
+            return;
+        }
+
+        channelReadiness.get();
+    }
 
     @Override
     public void addInputChannel(RemoteInputChannel listener) throws IOException {
@@ -171,6 +184,7 @@ class CreditBasedPartitionRequestClientHandler extends ChannelInboundHandlerAdap
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         if (this.ctx == null) {
             this.ctx = ctx;
+            channelReadiness.complete(null);
         }
 
         super.channelActive(ctx);
