@@ -43,6 +43,7 @@ public class BufferDebloater {
 
     private int lastBufferSize;
     private Duration lastEstimatedTimeToConsumeBuffers = Duration.ZERO;
+    private final double alpha;
 
     public BufferDebloater(Configuration taskConfig, IndexedInputGate[] inputGates) {
         this.inputGates = inputGates;
@@ -54,6 +55,7 @@ public class BufferDebloater {
                 taskConfig.getInteger(BUFFER_DEBLOAT_THRESHOLD_PERCENTAGES);
 
         this.lastBufferSize = (int) maxBufferSize;
+        alpha = 2.0 / (taskConfig.get(TaskManagerOptions.BUFFER_DEBLOAT_SAMPLES) + 1);
 
         // Right now the buffer size can not be grater than integer max value according to
         // MemorySegment and buffer implementation.
@@ -76,13 +78,11 @@ public class BufferDebloater {
         for (IndexedInputGate inputGate : inputGates) {
             totalNumber += Math.max(1, inputGate.getBuffersInUseCount());
         }
-        int newSize =
-                (int)
-                        Math.max(
-                                minBufferSize,
-                                Math.min(
-                                        desiredTotalBufferSizeInBytes / totalNumber,
-                                        maxBufferSize));
+
+        int newSize = lastBufferSize;
+        newSize += alpha * (newSize - (desiredTotalBufferSizeInBytes / totalNumber));
+        newSize = (int) Math.max(minBufferSize, Math.min(newSize, maxBufferSize));
+
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
                         newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));

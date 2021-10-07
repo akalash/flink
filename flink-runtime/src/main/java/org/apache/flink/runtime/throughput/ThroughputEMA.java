@@ -47,14 +47,7 @@ public class ThroughputEMA {
             return currentThroughput;
         }
 
-        if (currentThroughput != 0) {
-            currentThroughput += alpha * (instantThroughput(dataSize, time) - currentThroughput);
-        } else {
-            // Warm-up case.
-            currentThroughput = instantThroughput(dataSize, time);
-        }
-
-        return currentThroughput;
+        return currentThroughput = instantThroughput(dataSize, time);
     }
 
     static long instantThroughput(long dataSize, long time) {
