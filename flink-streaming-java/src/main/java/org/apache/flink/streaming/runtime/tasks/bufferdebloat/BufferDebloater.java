@@ -82,16 +82,20 @@ public class BufferDebloater {
         }
 
         lastBufferSize += alpha * (lastBufferSize - (desiredTotalBufferSizeInBytes / totalNumber));
-        int newSize = (int) Math.max(minBufferSize, Math.min(lastBufferSize, maxBufferSize));
+        lastBufferSize = (int) Math.max(minBufferSize, Math.min(lastBufferSize, maxBufferSize));
 
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
-                        newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));
+                        lastBufferSize
+                                * totalNumber
+                                * MILLIS_IN_SECOND
+                                / Math.max(1, currentThroughput));
 
         boolean skipUpdate =
-                (newSize > minBufferSize || newSize == lastAnnouncedBufferSize)
-                        && (newSize < maxBufferSize || newSize == lastAnnouncedBufferSize)
-                        && Math.abs(1 - ((double) lastAnnouncedBufferSize) / newSize) * 100
+                (lastBufferSize > minBufferSize || lastBufferSize == lastAnnouncedBufferSize)
+                        && (lastBufferSize < maxBufferSize
+                                || lastBufferSize == lastAnnouncedBufferSize)
+                        && Math.abs(1 - ((double) lastAnnouncedBufferSize) / lastBufferSize) * 100
                                 < bufferDebloatThresholdPercentages;
 
         // Skip update if the new value pretty close to the old one.
@@ -100,9 +104,9 @@ public class BufferDebloater {
         }
 
         for (IndexedInputGate inputGate : inputGates) {
-            inputGate.announceBufferSize(newSize);
+            inputGate.announceBufferSize(lastBufferSize);
         }
-        lastAnnouncedBufferSize = newSize;
+        lastAnnouncedBufferSize = lastBufferSize;
     }
 
     public int getLastAnnouncedBufferSize() {
