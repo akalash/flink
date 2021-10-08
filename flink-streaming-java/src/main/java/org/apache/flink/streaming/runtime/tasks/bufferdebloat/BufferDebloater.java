@@ -69,10 +69,6 @@ public class BufferDebloater {
     }
 
     public void recalculateBufferSize(long currentThroughput) {
-        if (currentThroughput == 0) {
-            return;
-        }
-
         long desiredTotalBufferSizeInBytes =
                 (currentThroughput * targetTotalBufferSize.toMillis()) / MILLIS_IN_SECOND;
 
