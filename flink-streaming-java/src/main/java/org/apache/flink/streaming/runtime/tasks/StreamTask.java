@@ -438,7 +438,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
                                             .toMillis());
             environment
                     .getMetricGroup()
-                    .gauge(MetricNames.DEBLOATED_BUFFER_SIZE, bufferDebloater::getLastBufferSize);
+                    .gauge(
+                            MetricNames.DEBLOATED_BUFFER_SIZE,
+                            bufferDebloater::getLastAnnouncedBufferSize);
         } else {
             this.bufferDebloater = null;
         }

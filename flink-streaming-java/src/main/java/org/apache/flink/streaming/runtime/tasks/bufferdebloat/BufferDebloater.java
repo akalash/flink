@@ -41,6 +41,7 @@ public class BufferDebloater {
     private final long minBufferSize;
     private final int bufferDebloatThresholdPercentages;
 
+    private int lastAnnouncedBufferSize;
     private int lastBufferSize;
     private Duration lastEstimatedTimeToConsumeBuffers = Duration.ZERO;
     private final double alpha;
@@ -54,7 +55,8 @@ public class BufferDebloater {
         this.bufferDebloatThresholdPercentages =
                 taskConfig.getInteger(BUFFER_DEBLOAT_THRESHOLD_PERCENTAGES);
 
-        this.lastBufferSize = (int) maxBufferSize;
+        this.lastAnnouncedBufferSize = (int) maxBufferSize;
+        this.lastBufferSize = lastAnnouncedBufferSize;
         alpha = 2.0 / (taskConfig.get(TaskManagerOptions.BUFFER_DEBLOAT_SAMPLES) + 1);
 
         // Right now the buffer size can not be grater than integer max value according to
@@ -79,18 +81,17 @@ public class BufferDebloater {
             totalNumber += Math.max(1, inputGate.getBuffersInUseCount());
         }
 
-        int newSize = lastBufferSize;
-        newSize += alpha * (newSize - (desiredTotalBufferSizeInBytes / totalNumber));
-        newSize = (int) Math.max(minBufferSize, Math.min(newSize, maxBufferSize));
+        lastBufferSize += alpha * (lastBufferSize - (desiredTotalBufferSizeInBytes / totalNumber));
+        int newSize = (int) Math.max(minBufferSize, Math.min(lastBufferSize, maxBufferSize));
 
         lastEstimatedTimeToConsumeBuffers =
                 Duration.ofMillis(
                         newSize * totalNumber * MILLIS_IN_SECOND / Math.max(1, currentThroughput));
 
         boolean skipUpdate =
-                (newSize > minBufferSize || newSize == lastBufferSize)
-                        && (newSize < maxBufferSize || newSize == lastBufferSize)
-                        && Math.abs(1 - ((double) lastBufferSize) / newSize) * 100
+                (newSize > minBufferSize || newSize == lastAnnouncedBufferSize)
+                        && (newSize < maxBufferSize || newSize == lastAnnouncedBufferSize)
+                        && Math.abs(1 - ((double) lastAnnouncedBufferSize) / newSize) * 100
                                 < bufferDebloatThresholdPercentages;
 
         // Skip update if the new value pretty close to the old one.
@@ -101,11 +102,11 @@ public class BufferDebloater {
         for (IndexedInputGate inputGate : inputGates) {
             inputGate.announceBufferSize(newSize);
         }
-        lastBufferSize = newSize;
+        lastAnnouncedBufferSize = newSize;
     }
 
-    public int getLastBufferSize() {
-        return lastBufferSize;
+    public int getLastAnnouncedBufferSize() {
+        return lastAnnouncedBufferSize;
     }
 
     public Duration getLastEstimatedTimeToConsumeBuffers() {
