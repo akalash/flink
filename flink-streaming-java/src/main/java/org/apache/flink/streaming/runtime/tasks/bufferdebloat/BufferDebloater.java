@@ -77,7 +77,7 @@ public class BufferDebloater {
             totalNumber += Math.max(1, inputGate.getBuffersInUseCount());
         }
 
-        lastBufferSize += alpha * (lastBufferSize - (desiredTotalBufferSizeInBytes / totalNumber));
+        lastBufferSize += alpha * ((desiredTotalBufferSizeInBytes / totalNumber) - lastBufferSize);
         lastBufferSize = (int) Math.max(minBufferSize, Math.min(lastBufferSize, maxBufferSize));
 
         lastEstimatedTimeToConsumeBuffers =
