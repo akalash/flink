@@ -424,7 +424,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         this.throughputCalculator = environment.getThroughputCalculator();
         Configuration taskManagerConf = environment.getTaskManagerInfo().getConfiguration();
 
-        this.bufferDebloatPeriod = taskManagerConf.get(BUFFER_DEBLOAT_PERIOD).toMillis();
+        long bufferDebloatPeriod = taskManagerConf.get(BUFFER_DEBLOAT_PERIOD).toMillis();
+        this.bufferDebloatPeriod =
+                bufferDebloatPeriod / 2 + ThreadLocalRandom.current().nextLong(bufferDebloatPeriod);
 
         if (taskManagerConf.get(TaskManagerOptions.BUFFER_DEBLOAT_ENABLED)) {
             this.bufferDebloater =
@@ -443,10 +445,6 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         } else {
             this.bufferDebloater = null;
         }
-    }
-
-    private long nextBufferDebloatPeriod() {
-        return bufferDebloatPeriod / 2 + ThreadLocalRandom.current().nextLong(bufferDebloatPeriod);
     }
 
     private TimerService createTimerService(String timerThreadName) {
@@ -782,7 +780,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
             return;
         }
         systemTimerService.registerTimer(
-                systemTimerService.getCurrentProcessingTime() + nextBufferDebloatPeriod(),
+                systemTimerService.getCurrentProcessingTime() + bufferDebloatPeriod,
                 timestamp ->
                         mainMailboxExecutor.submit(
                                 () -> {
