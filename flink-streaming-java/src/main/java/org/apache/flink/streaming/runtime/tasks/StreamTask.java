@@ -130,7 +130,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_PERIOD;
 import static org.apache.flink.util.ExceptionUtils.firstOrSuppressed;
@@ -424,9 +423,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
         this.throughputCalculator = environment.getThroughputCalculator();
         Configuration taskManagerConf = environment.getTaskManagerInfo().getConfiguration();
 
-        long bufferDebloatPeriod = taskManagerConf.get(BUFFER_DEBLOAT_PERIOD).toMillis();
-        this.bufferDebloatPeriod =
-                bufferDebloatPeriod / 2 + ThreadLocalRandom.current().nextLong(bufferDebloatPeriod);
+        this.bufferDebloatPeriod = taskManagerConf.get(BUFFER_DEBLOAT_PERIOD).toMillis();
 
         if (taskManagerConf.get(TaskManagerOptions.BUFFER_DEBLOAT_ENABLED)) {
             this.bufferDebloater =
