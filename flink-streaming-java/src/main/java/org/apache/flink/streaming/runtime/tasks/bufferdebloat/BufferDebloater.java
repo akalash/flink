@@ -68,6 +68,8 @@ public class BufferDebloater {
         checkArgument(targetTotalBufferSize.toMillis() > 0.0);
     }
 
+    long factor = 2;
+
     public void recalculateBufferSize(long currentThroughput) {
         long desiredTotalBufferSizeInBytes =
                 (currentThroughput * targetTotalBufferSize.toMillis()) / MILLIS_IN_SECOND;
@@ -78,8 +80,13 @@ public class BufferDebloater {
         }
 
         long desiredBufferSize = desiredTotalBufferSizeInBytes / totalNumber;
-        lastBufferSize +=
-                alpha * (Math.min(desiredBufferSize, 2L * lastBufferSize) - lastBufferSize);
+        if (desiredBufferSize > lastBufferSize) {
+            desiredBufferSize = Math.min(desiredBufferSize, factor * lastBufferSize);
+            factor *= 2;
+        } else {
+            factor = 2;
+        }
+        lastBufferSize += alpha * (desiredBufferSize - lastBufferSize);
         lastBufferSize = (int) Math.max(minBufferSize, Math.min(lastBufferSize, maxBufferSize));
 
         lastEstimatedTimeToConsumeBuffers =
