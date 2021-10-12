@@ -80,12 +80,12 @@ public class BufferDebloater {
         }
 
         long desiredBufferSize = desiredTotalBufferSizeInBytes / totalNumber;
-        if (desiredBufferSize > lastBufferSize) {
-            desiredBufferSize = Math.min(desiredBufferSize, factor * lastBufferSize);
-            factor *= 2;
-        } else {
-            factor = 2;
-        }
+        //        if (desiredBufferSize > lastBufferSize) {
+        //            desiredBufferSize = Math.min(desiredBufferSize, factor * lastBufferSize);
+        //            factor *= 2;
+        //        } else {
+        //            factor = 2;
+        //        }
         lastBufferSize += alpha * (desiredBufferSize - lastBufferSize);
         lastBufferSize = (int) Math.max(minBufferSize, Math.min(lastBufferSize, maxBufferSize));
 
