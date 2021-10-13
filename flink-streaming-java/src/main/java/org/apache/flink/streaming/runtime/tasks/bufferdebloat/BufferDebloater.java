@@ -23,6 +23,9 @@ import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_TARGET;
 import static org.apache.flink.configuration.TaskManagerOptions.BUFFER_DEBLOAT_THRESHOLD_PERCENTAGES;
@@ -45,6 +48,7 @@ public class BufferDebloater {
     private int lastBufferSize;
     private Duration lastEstimatedTimeToConsumeBuffers = Duration.ZERO;
     private final double alpha;
+    private final Queue<Long> bufferSizes;
 
     public BufferDebloater(Configuration taskConfig, IndexedInputGate[] inputGates) {
         this.inputGates = inputGates;
@@ -57,7 +61,19 @@ public class BufferDebloater {
 
         this.lastAnnouncedBufferSize = (int) maxBufferSize;
         this.lastBufferSize = lastAnnouncedBufferSize;
-        alpha = 2.0 / (taskConfig.get(TaskManagerOptions.BUFFER_DEBLOAT_SAMPLES) + 1);
+        Integer samples = taskConfig.get(TaskManagerOptions.BUFFER_DEBLOAT_SAMPLES);
+        alpha = 2.0 / (samples + 1);
+
+        bufferSizes =
+                new LinkedList<Long>() {
+                    @Override
+                    public boolean add(Long o) {
+                        if (size() == samples) {
+                            poll();
+                        }
+                        return super.add(o);
+                    }
+                };
 
         // Right now the buffer size can not be grater than integer max value according to
         // MemorySegment and buffer implementation.
@@ -80,14 +96,16 @@ public class BufferDebloater {
         }
 
         long desiredBufferSize = desiredTotalBufferSizeInBytes / totalNumber;
-        //        if (desiredBufferSize > lastBufferSize) {
-        //            desiredBufferSize = Math.min(desiredBufferSize, factor * lastBufferSize);
-        //            factor *= 2;
-        //        } else {
-        //            factor = 2;
-        //        }
-        lastBufferSize +=
-                alpha * (Math.min(desiredBufferSize, 2L * lastBufferSize) - lastBufferSize);
+        bufferSizes.add(desiredBufferSize);
+        ArrayList<Long> sizes = new ArrayList<>(bufferSizes);
+        sizes.sort(Long::compareTo);
+        if (sizes.size() % 2 == 1) {
+            lastBufferSize = sizes.get(sizes.size() / 2 + 1).intValue();
+        } else {
+            lastBufferSize =
+                    (int) (sizes.get(sizes.size() / 2) + sizes.get(sizes.size() / 2 - 1)) / 2;
+        }
+
         lastBufferSize = (int) Math.max(minBufferSize, Math.min(lastBufferSize, maxBufferSize));
 
         lastEstimatedTimeToConsumeBuffers =
