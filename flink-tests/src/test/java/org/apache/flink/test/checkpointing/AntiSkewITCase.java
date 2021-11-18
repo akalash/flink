@@ -48,7 +48,7 @@ import static org.apache.flink.api.common.restartstrategy.RestartStrategies.fixe
 public class AntiSkewITCase extends TestLogger {
     private static final AtomicBoolean HAS_FAILED = new AtomicBoolean();
     private static final int MAX_PARALLELISM = 13;
-    private static final long NUMBER_OF_CHECKPOINTS_BEFORE_FAILURE = 6;
+    private static final long NUMBER_OF_CHECKPOINTS_BEFORE_FAILURE = 20;
 
     @ClassRule
     public static final MiniClusterWithClientResource CLUSTER =

@@ -163,7 +163,12 @@ public class StateAssignmentOperation {
         //                createKeyGroupPartitions(
         //                        taskStateAssignment.executionJobVertex.getMaxParallelism(),
         //                        taskStateAssignment.newParallelism);
-
+        for (TaskStateAssignment upstreamAssignment :
+                taskStateAssignment.getUpstreamAssignments()) {
+            upstreamAssignment.setDownstreamKeyGroupAssignment(
+                    new KeyGroupAssignment(keyGroupPartitions));
+        }
+        taskStateAssignment.setKeyGroupAssignment(new KeyGroupAssignment(keyGroupPartitions));
         /*
          * Redistribute ManagedOperatorStates and RawOperatorStates from old parallelism to new parallelism.
          *
@@ -829,6 +834,29 @@ public class StateAssignmentOperation {
                             numberKeyGroups, parallelism, i));
         }
         return result;
+    }
+
+    public static List<KeyGroupRange> createKeyGroupPartitions(int parallelism, int[] assignment) {
+        List<KeyGroupRange> result = new ArrayList<>(parallelism);
+
+        for (int i = 0; i < parallelism; ++i) {
+            result.add(keyGroupRange(assignment, i));
+        }
+        return result;
+    }
+
+    public static KeyGroupRange keyGroupRange(int[] assignment, int operatorIndex) {
+        int start = -1, end = -1;
+        for (int i = 0; i < assignment.length; i++) {
+            if (start == -1 && assignment[i] == operatorIndex) {
+                start = i;
+            }
+
+            if (assignment[i] == operatorIndex) {
+                end = i;
+            }
+        }
+        return new KeyGroupRange(start, end);
     }
 
     /**

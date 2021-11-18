@@ -111,6 +111,9 @@ public class OperatorSubtaskState implements CompositeStateHandle {
      */
     private final long stateSize;
 
+    private final KeyGroupAssignment keyGroupAssignment;
+    private final KeyGroupAssignment downstreamKeyGroupAssignment;
+
     private OperatorSubtaskState(
             StateObjectCollection<OperatorStateHandle> managedOperatorState,
             StateObjectCollection<OperatorStateHandle> rawOperatorState,
@@ -120,7 +123,9 @@ public class OperatorSubtaskState implements CompositeStateHandle {
             StateObjectCollection<ResultSubpartitionStateHandle> resultSubpartitionState,
             InflightDataRescalingDescriptor inputRescalingDescriptor,
             InflightDataRescalingDescriptor outputRescalingDescriptor,
-            KeyGroupAccessCountersDescriptor keyGroupAccessCounter) {
+            KeyGroupAccessCountersDescriptor keyGroupAccessCounter,
+            KeyGroupAssignment keyGroupAssignment,
+            KeyGroupAssignment downstreamKeyGroupAssignment) {
 
         this.managedOperatorState = checkNotNull(managedOperatorState);
         this.rawOperatorState = checkNotNull(rawOperatorState);
@@ -131,6 +136,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
         this.inputRescalingDescriptor = checkNotNull(inputRescalingDescriptor);
         this.outputRescalingDescriptor = checkNotNull(outputRescalingDescriptor);
         this.keyGroupAccessCounter = checkNotNull(keyGroupAccessCounter);
+        this.keyGroupAssignment = keyGroupAssignment;
+        this.downstreamKeyGroupAssignment = downstreamKeyGroupAssignment;
 
         long calculateStateSize = managedOperatorState.getStateSize();
         calculateStateSize += rawOperatorState.getStateSize();
@@ -152,7 +159,9 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 StateObjectCollection.empty(),
                 InflightDataRescalingDescriptor.NO_RESCALE,
                 InflightDataRescalingDescriptor.NO_RESCALE,
-                KeyGroupAccessCountersDescriptor.NONE);
+                KeyGroupAccessCountersDescriptor.NONE,
+                null,
+                null);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -191,6 +200,14 @@ public class OperatorSubtaskState implements CompositeStateHandle {
 
     public KeyGroupAccessCountersDescriptor getKeyGroupAccessCounter() {
         return keyGroupAccessCounter;
+    }
+
+    public KeyGroupAssignment getKeyGroupAssignment() {
+        return keyGroupAssignment;
+    }
+
+    public KeyGroupAssignment getDownstreamKeyGroupAssignment() {
+        return downstreamKeyGroupAssignment;
     }
 
     @Override
@@ -261,7 +278,10 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 && Objects.equal(
                         getOutputRescalingDescriptor(), that.getOutputRescalingDescriptor())
                 && Objects.equal(getRawKeyedState(), that.getRawKeyedState())
-                && Objects.equal(getKeyGroupAccessCounter(), that.getKeyGroupAccessCounter());
+                && Objects.equal(getKeyGroupAccessCounter(), that.getKeyGroupAccessCounter())
+                && Objects.equal(getKeyGroupAssignment(), that.getKeyGroupAssignment())
+                && Objects.equal(
+                        getDownstreamKeyGroupAssignment(), that.getDownstreamKeyGroupAssignment());
     }
 
     @Override
@@ -276,7 +296,9 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 getInputRescalingDescriptor(),
                 getOutputRescalingDescriptor(),
                 getStateSize(),
-                getKeyGroupAccessCounter());
+                getKeyGroupAccessCounter(),
+                getKeyGroupAssignment(),
+                getDownstreamKeyGroupAssignment());
     }
 
     @Override
@@ -296,6 +318,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 + resultSubpartitionState
                 + ", stateSize="
                 + stateSize
+                + ", keyGroupAssignment="
+                + keyGroupAssignment
                 + '}';
     }
 
@@ -319,7 +343,9 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 .setResultSubpartitionState(resultSubpartitionState)
                 .setInputRescalingDescriptor(inputRescalingDescriptor)
                 .setOutputRescalingDescriptor(outputRescalingDescriptor)
-                .setKeyGroupAccessCounter(keyGroupAccessCounter);
+                .setKeyGroupAccessCounter(keyGroupAccessCounter)
+                .setKeyGroupAssignment(keyGroupAssignment)
+                .setDownstreamKeyGroupAssignment(downstreamKeyGroupAssignment);
     }
 
     public static Builder builder() {
@@ -349,6 +375,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 InflightDataRescalingDescriptor.NO_RESCALE;
         private KeyGroupAccessCountersDescriptor keyGroupAccessCounter =
                 KeyGroupAccessCountersDescriptor.NONE;
+        private KeyGroupAssignment downstreamKeyGroupAssignment = null;
+        private KeyGroupAssignment keyGroupAssignment = null;
 
         private Builder() {}
 
@@ -428,6 +456,16 @@ public class OperatorSubtaskState implements CompositeStateHandle {
             return this;
         }
 
+        public Builder setKeyGroupAssignment(KeyGroupAssignment assignment) {
+            this.keyGroupAssignment = assignment;
+            return this;
+        }
+
+        public Builder setDownstreamKeyGroupAssignment(KeyGroupAssignment assignment) {
+            this.downstreamKeyGroupAssignment = assignment;
+            return this;
+        }
+
         public OperatorSubtaskState build() {
             return new OperatorSubtaskState(
                     managedOperatorState,
@@ -438,7 +476,9 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                     resultSubpartitionState,
                     inputRescalingDescriptor,
                     outputRescalingDescriptor,
-                    keyGroupAccessCounter);
+                    keyGroupAccessCounter,
+                    keyGroupAssignment,
+                    downstreamKeyGroupAssignment);
         }
     }
 }
