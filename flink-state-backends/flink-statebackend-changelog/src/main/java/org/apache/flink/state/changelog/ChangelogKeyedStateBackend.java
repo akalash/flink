@@ -235,8 +235,8 @@ public class ChangelogKeyedStateBackend<K>
     }
 
     @Override
-    public void setCurrentKey(K newKey) {
-        keyedStateBackend.setCurrentKey(newKey);
+    public int setCurrentKey(K newKey) {
+        return keyedStateBackend.setCurrentKey(newKey);
     }
 
     @Override

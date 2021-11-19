@@ -279,6 +279,11 @@ public abstract class MetadataV2V3SerializerBase {
         state.setInputChannelState(deserializeInputChannelStateHandle(dis, context));
         state.setResultSubpartitionState(deserializeResultSubpartitionStateHandle(dis, context));
 
+        long[] keyGroupAccessCounters = new long[dis.readInt()];
+        for (int i = 0; i < keyGroupAccessCounters.length; i++) {
+            keyGroupAccessCounters[i] = dis.readLong();
+        }
+
         return state.build();
     }
 

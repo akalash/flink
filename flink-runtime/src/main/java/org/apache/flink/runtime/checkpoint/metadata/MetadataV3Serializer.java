@@ -27,6 +27,7 @@ import org.apache.flink.runtime.checkpoint.OperatorSubtaskState;
 import org.apache.flink.runtime.checkpoint.StateObjectCollection;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.state.InputChannelStateHandle;
+import org.apache.flink.runtime.state.KeyGroupAccessCountersDescriptor;
 import org.apache.flink.runtime.state.KeyedStateHandle;
 import org.apache.flink.runtime.state.OperatorStateHandle;
 import org.apache.flink.runtime.state.ResultSubpartitionStateHandle;
@@ -145,6 +146,16 @@ public class MetadataV3Serializer extends MetadataV2V3SerializerBase implements 
                 subtaskState.getResultSubpartitionState(),
                 dos,
                 this::serializeResultSubpartitionStateHandle);
+        serializeKeyGroupAccessCounter(subtaskState.getKeyGroupAccessCounter(), dos);
+    }
+
+    private void serializeKeyGroupAccessCounter(
+            KeyGroupAccessCountersDescriptor keyGroupAccessCounter, DataOutputStream dos)
+            throws IOException {
+        dos.writeInt(keyGroupAccessCounter.getKeyGroupAccessCounter().length);
+        for (long counter : keyGroupAccessCounter.getKeyGroupAccessCounter()) {
+            dos.writeLong(counter);
+        }
     }
 
     @Override

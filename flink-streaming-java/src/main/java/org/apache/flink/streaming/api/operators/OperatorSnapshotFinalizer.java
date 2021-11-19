@@ -81,6 +81,7 @@ public class OperatorSnapshotFinalizer {
                                 emptyIfNull(inputChannel.getJobManagerOwnedSnapshot()))
                         .setResultSubpartitionState(
                                 emptyIfNull(resultSubpartition.getJobManagerOwnedSnapshot()))
+                        .setKeyGroupAccessCounter(snapshotFutures.getKeyGroupAccessCounter())
                         .build();
 
         taskLocalState =

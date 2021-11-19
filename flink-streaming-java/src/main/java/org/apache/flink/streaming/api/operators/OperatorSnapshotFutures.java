@@ -22,6 +22,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.checkpoint.StateObjectCollection;
 import org.apache.flink.runtime.state.DoneFuture;
 import org.apache.flink.runtime.state.InputChannelStateHandle;
+import org.apache.flink.runtime.state.KeyGroupAccessCountersDescriptor;
 import org.apache.flink.runtime.state.KeyedStateHandle;
 import org.apache.flink.runtime.state.OperatorStateHandle;
 import org.apache.flink.runtime.state.ResultSubpartitionStateHandle;
@@ -31,6 +32,7 @@ import org.apache.flink.runtime.state.StateObject;
 import org.apache.flink.shaded.guava30.com.google.common.io.Closer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,14 +60,21 @@ public class OperatorSnapshotFutures {
     private Future<SnapshotResult<StateObjectCollection<ResultSubpartitionStateHandle>>>
             resultSubpartitionStateFuture;
 
+    @Nullable private final long[] keyGroupAccessCounter;
+
     public OperatorSnapshotFutures() {
+        this(null);
+    }
+
+    public OperatorSnapshotFutures(@Nullable long[] keyGroupAccessCounter) {
         this(
                 DoneFuture.of(SnapshotResult.empty()),
                 DoneFuture.of(SnapshotResult.empty()),
                 DoneFuture.of(SnapshotResult.empty()),
                 DoneFuture.of(SnapshotResult.empty()),
                 DoneFuture.of(SnapshotResult.empty()),
-                DoneFuture.of(SnapshotResult.empty()));
+                DoneFuture.of(SnapshotResult.empty()),
+                keyGroupAccessCounter);
     }
 
     public OperatorSnapshotFutures(
@@ -79,12 +88,35 @@ public class OperatorSnapshotFutures {
             @Nonnull
                     Future<SnapshotResult<StateObjectCollection<ResultSubpartitionStateHandle>>>
                             resultSubpartitionStateFuture) {
+        this(
+                keyedStateManagedFuture,
+                keyedStateRawFuture,
+                operatorStateManagedFuture,
+                operatorStateRawFuture,
+                inputChannelStateFuture,
+                resultSubpartitionStateFuture,
+                null);
+    }
+
+    public OperatorSnapshotFutures(
+            @Nonnull RunnableFuture<SnapshotResult<KeyedStateHandle>> keyedStateManagedFuture,
+            @Nonnull RunnableFuture<SnapshotResult<KeyedStateHandle>> keyedStateRawFuture,
+            @Nonnull RunnableFuture<SnapshotResult<OperatorStateHandle>> operatorStateManagedFuture,
+            @Nonnull RunnableFuture<SnapshotResult<OperatorStateHandle>> operatorStateRawFuture,
+            @Nonnull
+                    Future<SnapshotResult<StateObjectCollection<InputChannelStateHandle>>>
+                            inputChannelStateFuture,
+            @Nonnull
+                    Future<SnapshotResult<StateObjectCollection<ResultSubpartitionStateHandle>>>
+                            resultSubpartitionStateFuture,
+            @Nullable long[] keyGroupAccessCounter) {
         this.keyedStateManagedFuture = keyedStateManagedFuture;
         this.keyedStateRawFuture = keyedStateRawFuture;
         this.operatorStateManagedFuture = operatorStateManagedFuture;
         this.operatorStateRawFuture = operatorStateRawFuture;
         this.inputChannelStateFuture = inputChannelStateFuture;
         this.resultSubpartitionStateFuture = resultSubpartitionStateFuture;
+        this.keyGroupAccessCounter = keyGroupAccessCounter;
     }
 
     @Nonnull
@@ -153,6 +185,10 @@ public class OperatorSnapshotFutures {
                     Future<SnapshotResult<StateObjectCollection<ResultSubpartitionStateHandle>>>
                             resultSubpartitionStateFuture) {
         this.resultSubpartitionStateFuture = resultSubpartitionStateFuture;
+    }
+
+    public KeyGroupAccessCountersDescriptor getKeyGroupAccessCounter() {
+        return KeyGroupAccessCountersDescriptor.of(keyGroupAccessCounter);
     }
 
     /** @return discarded state size (if available). */

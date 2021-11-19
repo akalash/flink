@@ -100,7 +100,7 @@ public class BatchExecutionKeyedStateBackend<K> implements CheckpointableKeyedSt
     }
 
     @Override
-    public void setCurrentKey(K newKey) {
+    public int setCurrentKey(K newKey) {
         if (!Objects.equals(newKey, currentKey)) {
             notifyKeySelected(newKey);
             for (State value : states.values()) {
@@ -113,6 +113,7 @@ public class BatchExecutionKeyedStateBackend<K> implements CheckpointableKeyedSt
             }
             this.currentKey = newKey;
         }
+        return -1;
     }
 
     @Override

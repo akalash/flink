@@ -61,6 +61,7 @@ import javax.annotation.Nullable;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -82,6 +83,7 @@ public class StreamOperatorStateHandler {
     @Nullable private final DefaultKeyedStateStore keyedStateStore;
     private final OperatorStateBackend operatorStateBackend;
     private final StreamOperatorStateContext context;
+    @Nullable private final long[] keyGroupAccessCounter;
 
     public StreamOperatorStateHandler(
             StreamOperatorStateContext context,
@@ -94,7 +96,10 @@ public class StreamOperatorStateHandler {
 
         if (keyedStateBackend != null) {
             keyedStateStore = new DefaultKeyedStateStore(keyedStateBackend, executionConfig);
+            keyGroupAccessCounter =
+                    new long[keyedStateBackend.getKeyGroupRange().getNumberOfKeyGroups()];
         } else {
+            keyGroupAccessCounter = null;
             keyedStateStore = null;
         }
     }
@@ -161,7 +166,12 @@ public class StreamOperatorStateHandler {
                         ? keyedStateBackend.getKeyGroupRange()
                         : KeyGroupRange.EMPTY_KEY_GROUP_RANGE;
 
-        OperatorSnapshotFutures snapshotInProgress = new OperatorSnapshotFutures();
+        OperatorSnapshotFutures snapshotInProgress =
+                new OperatorSnapshotFutures(
+                        keyGroupAccessCounter == null
+                                ? null
+                                : Arrays.copyOf(
+                                        keyGroupAccessCounter, keyGroupAccessCounter.length));
 
         StateSnapshotContextSynchronousImpl snapshotContext =
                 new StateSnapshotContextSynchronousImpl(
@@ -359,7 +369,11 @@ public class StreamOperatorStateHandler {
                 @SuppressWarnings("rawtypes")
                 CheckpointableKeyedStateBackend rawBackend = keyedStateBackend;
 
-                rawBackend.setCurrentKey(key);
+                int keyGroup = rawBackend.setCurrentKey(key);
+                if (keyGroupAccessCounter != null) {
+                    keyGroupAccessCounter[
+                            keyGroup - rawBackend.getKeyGroupRange().getStartKeyGroup()]++;
+                }
             } catch (Exception e) {
                 throw new RuntimeException(
                         "Exception occurred while setting the current key context.", e);

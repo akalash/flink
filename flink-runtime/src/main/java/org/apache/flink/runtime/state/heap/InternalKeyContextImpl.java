@@ -66,8 +66,9 @@ public class InternalKeyContextImpl<K> implements InternalKeyContext<K> {
     }
 
     @Override
-    public void setCurrentKey(@Nonnull K currentKey) {
+    public int setCurrentKey(@Nonnull K currentKey) {
         this.currentKey = currentKey;
+        return -1;
     }
 
     @Override

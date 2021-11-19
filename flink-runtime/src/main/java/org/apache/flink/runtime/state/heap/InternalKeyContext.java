@@ -51,7 +51,7 @@ public interface InternalKeyContext<K> {
      *
      * @param currentKey the current key to set to.
      */
-    void setCurrentKey(@Nonnull K currentKey);
+    int setCurrentKey(@Nonnull K currentKey);
 
     /**
      * Set current key group index of the context.

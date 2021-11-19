@@ -21,6 +21,7 @@ package org.apache.flink.runtime.checkpoint;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.runtime.state.CompositeStateHandle;
 import org.apache.flink.runtime.state.InputChannelStateHandle;
+import org.apache.flink.runtime.state.KeyGroupAccessCountersDescriptor;
 import org.apache.flink.runtime.state.KeyedStateHandle;
 import org.apache.flink.runtime.state.OperatorStateHandle;
 import org.apache.flink.runtime.state.ResultSubpartitionStateHandle;
@@ -28,6 +29,7 @@ import org.apache.flink.runtime.state.SharedStateRegistry;
 import org.apache.flink.runtime.state.StateObject;
 import org.apache.flink.runtime.state.StateUtil;
 
+import com.google.common.base.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +103,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
      */
     private final InflightDataRescalingDescriptor outputRescalingDescriptor;
 
+    private final KeyGroupAccessCountersDescriptor keyGroupAccessCounter;
+
     /**
      * The state size. This is also part of the deserialized state handle. We store it here in order
      * to not deserialize the state handle when gathering stats.
@@ -115,7 +119,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
             StateObjectCollection<InputChannelStateHandle> inputChannelState,
             StateObjectCollection<ResultSubpartitionStateHandle> resultSubpartitionState,
             InflightDataRescalingDescriptor inputRescalingDescriptor,
-            InflightDataRescalingDescriptor outputRescalingDescriptor) {
+            InflightDataRescalingDescriptor outputRescalingDescriptor,
+            KeyGroupAccessCountersDescriptor keyGroupAccessCounter) {
 
         this.managedOperatorState = checkNotNull(managedOperatorState);
         this.rawOperatorState = checkNotNull(rawOperatorState);
@@ -125,6 +130,7 @@ public class OperatorSubtaskState implements CompositeStateHandle {
         this.resultSubpartitionState = checkNotNull(resultSubpartitionState);
         this.inputRescalingDescriptor = checkNotNull(inputRescalingDescriptor);
         this.outputRescalingDescriptor = checkNotNull(outputRescalingDescriptor);
+        this.keyGroupAccessCounter = checkNotNull(keyGroupAccessCounter);
 
         long calculateStateSize = managedOperatorState.getStateSize();
         calculateStateSize += rawOperatorState.getStateSize();
@@ -145,7 +151,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 StateObjectCollection.empty(),
                 StateObjectCollection.empty(),
                 InflightDataRescalingDescriptor.NO_RESCALE,
-                InflightDataRescalingDescriptor.NO_RESCALE);
+                InflightDataRescalingDescriptor.NO_RESCALE,
+                KeyGroupAccessCountersDescriptor.NONE);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -180,6 +187,10 @@ public class OperatorSubtaskState implements CompositeStateHandle {
 
     public InflightDataRescalingDescriptor getOutputRescalingDescriptor() {
         return outputRescalingDescriptor;
+    }
+
+    public KeyGroupAccessCountersDescriptor getKeyGroupAccessCounter() {
+        return keyGroupAccessCounter;
     }
 
     @Override
@@ -240,46 +251,32 @@ public class OperatorSubtaskState implements CompositeStateHandle {
         }
 
         OperatorSubtaskState that = (OperatorSubtaskState) o;
-
-        if (getStateSize() != that.getStateSize()) {
-            return false;
-        }
-        if (!getManagedOperatorState().equals(that.getManagedOperatorState())) {
-            return false;
-        }
-        if (!getRawOperatorState().equals(that.getRawOperatorState())) {
-            return false;
-        }
-        if (!getManagedKeyedState().equals(that.getManagedKeyedState())) {
-            return false;
-        }
-        if (!getInputChannelState().equals(that.getInputChannelState())) {
-            return false;
-        }
-        if (!getResultSubpartitionState().equals(that.getResultSubpartitionState())) {
-            return false;
-        }
-        if (!getInputRescalingDescriptor().equals(that.getInputRescalingDescriptor())) {
-            return false;
-        }
-        if (!getOutputRescalingDescriptor().equals(that.getOutputRescalingDescriptor())) {
-            return false;
-        }
-        return getRawKeyedState().equals(that.getRawKeyedState());
+        return Objects.equal(getStateSize(), that.getStateSize())
+                && Objects.equal(getManagedOperatorState(), that.getManagedOperatorState())
+                && Objects.equal(getRawOperatorState(), that.getRawOperatorState())
+                && Objects.equal(getManagedKeyedState(), that.getManagedKeyedState())
+                && Objects.equal(getInputChannelState(), that.getInputChannelState())
+                && Objects.equal(getResultSubpartitionState(), that.getResultSubpartitionState())
+                && Objects.equal(getInputRescalingDescriptor(), that.getInputRescalingDescriptor())
+                && Objects.equal(
+                        getOutputRescalingDescriptor(), that.getOutputRescalingDescriptor())
+                && Objects.equal(getRawKeyedState(), that.getRawKeyedState())
+                && Objects.equal(getKeyGroupAccessCounter(), that.getKeyGroupAccessCounter());
     }
 
     @Override
     public int hashCode() {
-        int result = getManagedOperatorState().hashCode();
-        result = 31 * result + getRawOperatorState().hashCode();
-        result = 31 * result + getManagedKeyedState().hashCode();
-        result = 31 * result + getRawKeyedState().hashCode();
-        result = 31 * result + getInputChannelState().hashCode();
-        result = 31 * result + getResultSubpartitionState().hashCode();
-        result = 31 * result + getInputRescalingDescriptor().hashCode();
-        result = 31 * result + getOutputRescalingDescriptor().hashCode();
-        result = 31 * result + (int) (getStateSize() ^ (getStateSize() >>> 32));
-        return result;
+        return Objects.hashCode(
+                getManagedOperatorState(),
+                getRawOperatorState(),
+                getManagedKeyedState(),
+                getRawKeyedState(),
+                getInputChannelState(),
+                getResultSubpartitionState(),
+                getInputRescalingDescriptor(),
+                getOutputRescalingDescriptor(),
+                getStateSize(),
+                getKeyGroupAccessCounter());
     }
 
     @Override
@@ -308,7 +305,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 || managedKeyedState.hasState()
                 || rawKeyedState.hasState()
                 || inputChannelState.hasState()
-                || resultSubpartitionState.hasState();
+                || resultSubpartitionState.hasState()
+                || !keyGroupAccessCounter.isEmpty();
     }
 
     public Builder toBuilder() {
@@ -320,7 +318,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 .setInputChannelState(inputChannelState)
                 .setResultSubpartitionState(resultSubpartitionState)
                 .setInputRescalingDescriptor(inputRescalingDescriptor)
-                .setOutputRescalingDescriptor(outputRescalingDescriptor);
+                .setOutputRescalingDescriptor(outputRescalingDescriptor)
+                .setKeyGroupAccessCounter(keyGroupAccessCounter);
     }
 
     public static Builder builder() {
@@ -348,6 +347,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                 InflightDataRescalingDescriptor.NO_RESCALE;
         private InflightDataRescalingDescriptor outputRescalingDescriptor =
                 InflightDataRescalingDescriptor.NO_RESCALE;
+        private KeyGroupAccessCountersDescriptor keyGroupAccessCounter =
+                KeyGroupAccessCountersDescriptor.NONE;
 
         private Builder() {}
 
@@ -417,6 +418,16 @@ public class OperatorSubtaskState implements CompositeStateHandle {
             return this;
         }
 
+        public Builder setKeyGroupAccessAcounter() {
+            return this;
+        }
+
+        public Builder setKeyGroupAccessCounter(
+                KeyGroupAccessCountersDescriptor keyGroupAccessCounter) {
+            this.keyGroupAccessCounter = checkNotNull(keyGroupAccessCounter);
+            return this;
+        }
+
         public OperatorSubtaskState build() {
             return new OperatorSubtaskState(
                     managedOperatorState,
@@ -426,7 +437,8 @@ public class OperatorSubtaskState implements CompositeStateHandle {
                     inputChannelState,
                     resultSubpartitionState,
                     inputRescalingDescriptor,
-                    outputRescalingDescriptor);
+                    outputRescalingDescriptor,
+                    keyGroupAccessCounter);
         }
     }
 }

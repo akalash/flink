@@ -40,7 +40,7 @@ public interface KeyedStateBackend<K>
      *
      * @param newKey The new current key.
      */
-    void setCurrentKey(K newKey);
+    int setCurrentKey(K newKey);
 
     /** @return Current key. */
     K getCurrentKey();
