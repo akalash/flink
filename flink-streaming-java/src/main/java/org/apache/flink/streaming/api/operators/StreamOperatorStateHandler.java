@@ -371,13 +371,8 @@ public class StreamOperatorStateHandler {
 
                 int keyGroup = rawBackend.setCurrentKey(key);
                 if (keyGroupAccessCounter != null) {
-                    try {
-                        keyGroupAccessCounter[
-                                keyGroup - rawBackend.getKeyGroupRange().getStartKeyGroup()]++;
-                    } catch (ArrayIndexOutOfBoundsException ex) {
-                        int keyGroup2 = rawBackend.setCurrentKey(key);
-                        ex.printStackTrace();
-                    }
+                    keyGroupAccessCounter[
+                            keyGroup - rawBackend.getKeyGroupRange().getStartKeyGroup()]++;
                 }
             } catch (Exception e) {
                 throw new RuntimeException(

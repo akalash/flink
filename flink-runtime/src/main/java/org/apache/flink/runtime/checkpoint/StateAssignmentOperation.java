@@ -148,7 +148,7 @@ public class StateAssignmentOperation {
 
         // actually assign the state
         for (TaskStateAssignment stateAssignment : vertexAssignments.values()) {
-            if (stateAssignment.hasNonFinishedState || stateAssignment.isFullyFinished) {
+            if (stateAssignment.hasStateForAssign()) {
                 assignTaskStateToExecutionJobVertices(stateAssignment);
             }
         }

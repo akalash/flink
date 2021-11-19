@@ -133,6 +133,13 @@ class TaskStateAssignment {
                         .anyMatch(subState -> !subState.getResultSubpartitionState().isEmpty());
     }
 
+    public boolean hasStateForAssign() {
+        return hasNonFinishedState
+                || isFullyFinished
+                || downstreamKeyGroupAssignment != null
+                || keyGroupAssignment != null;
+    }
+
     public void setDownstreamKeyGroupAssignment(KeyGroupAssignment assignment) {
         this.downstreamKeyGroupAssignment = assignment;
     }
