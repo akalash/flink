@@ -90,6 +90,39 @@ public class StateAssignmentOperationTest extends TestLogger {
     private static final int MAX_P = 256;
 
     @Test
+    public void testBestPartitioning() {
+        assertPartitioning(
+                asList(KeyGroupRange.of(0, 1), KeyGroupRange.of(2, 3)), new long[] {0, 0, 0, 0});
+        assertPartitioning(asList(KeyGroupRange.of(0, 0)), new long[] {1});
+        assertPartitioning(asList(KeyGroupRange.of(0, 3)), new long[] {1, 2, 3, 4});
+        assertPartitioning(
+                asList(KeyGroupRange.of(0, 0), KeyGroupRange.of(1, 1), KeyGroupRange.of(2, 2)),
+                new long[] {1, 1, 1});
+        assertPartitioning(
+                asList(KeyGroupRange.of(0, 1), KeyGroupRange.of(2, 3), KeyGroupRange.of(4, 5)),
+                new long[] {1, 1, 1, 1, 1, 1});
+        assertPartitioning(
+                asList(KeyGroupRange.of(0, 0), KeyGroupRange.of(1, 2), KeyGroupRange.of(3, 5)),
+                new long[] {1, 1, 1, 1, 1, 0});
+        assertPartitioning(
+                asList(KeyGroupRange.of(0, 0), KeyGroupRange.of(1, 3), KeyGroupRange.of(4, 5)),
+                new long[] {7, 1, 1, 1, 6, 1});
+        assertPartitioning(
+                asList(KeyGroupRange.of(0, 2), KeyGroupRange.of(3, 4), KeyGroupRange.of(5, 5)),
+                new long[] {1, 1, 4, 2, 1, 5});
+    }
+
+    private void assertPartitioning(List<KeyGroupRange> expectedRanges, long[] keyGroupWeights) {
+        assertThat(
+                StateAssignmentOperation.bruteForceKeyGroupPartitions(
+                        keyGroupWeights,
+                        new JobVertexID(42, 44),
+                        keyGroupWeights.length,
+                        expectedRanges.size()),
+                is(expectedRanges));
+    }
+
+    @Test
     public void testRepartitionSplitDistributeStates() {
         OperatorID operatorID = new OperatorID();
         OperatorState operatorState = new OperatorState(operatorID, 2, 4);

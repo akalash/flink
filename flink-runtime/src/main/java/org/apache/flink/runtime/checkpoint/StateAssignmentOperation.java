@@ -29,10 +29,12 @@ import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.IntermediateResult;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSet;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobgraph.OperatorInstanceID;
 import org.apache.flink.runtime.state.AbstractChannelStateHandle;
 import org.apache.flink.runtime.state.InputChannelStateHandle;
+import org.apache.flink.runtime.state.KeyGroupAccessCountersDescriptor;
 import org.apache.flink.runtime.state.KeyGroupRange;
 import org.apache.flink.runtime.state.KeyGroupRangeAssignment;
 import org.apache.flink.runtime.state.KeyGroupsStateHandle;
@@ -45,9 +47,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +60,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 import static org.apache.flink.util.Preconditions.checkNotNull;
+import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * This class encapsulates the operation of assigning restored state when restoring from a
@@ -154,10 +159,10 @@ public class StateAssignmentOperation {
         // 1. first compute the new parallelism
         checkParallelismPreconditions(taskStateAssignment);
 
-        List<KeyGroupRange> keyGroupPartitions =
-                createKeyGroupPartitions(
-                        taskStateAssignment.executionJobVertex.getMaxParallelism(),
-                        taskStateAssignment.newParallelism);
+        List<KeyGroupRange> keyGroupPartitions = bruteForceKeyGroupPartitions(taskStateAssignment);
+        //                createKeyGroupPartitions(
+        //                        taskStateAssignment.executionJobVertex.getMaxParallelism(),
+        //                        taskStateAssignment.newParallelism);
 
         /*
          * Redistribute ManagedOperatorStates and RawOperatorStates from old parallelism to new parallelism.
@@ -195,6 +200,193 @@ public class StateAssignmentOperation {
         reDistributeResultSubpartitionStates(taskStateAssignment);
 
         reDistributeKeyedStates(keyGroupPartitions, taskStateAssignment);
+    }
+
+    private static List<KeyGroupRange> bruteForceKeyGroupPartitions(
+            TaskStateAssignment taskStateAssignment) {
+        return bruteForceKeyGroupPartitions(
+                collectKeyGroupWeights(taskStateAssignment),
+                taskStateAssignment.executionJobVertex.getJobVertexId(),
+                taskStateAssignment.executionJobVertex.getMaxParallelism(),
+                taskStateAssignment.newParallelism);
+    }
+
+    /**
+     * This is a brute force approach of generating all possible continuous partitioning and
+     * selecting the one with the smallest skew of weights. This is definitely computation heavy
+     * approach and a dynamic programming method could be used to optimise this algorithm.
+     */
+    static List<KeyGroupRange> bruteForceKeyGroupPartitions(
+            long[] keyGroupWeights,
+            JobVertexID jobVertexId,
+            int maxParallelism,
+            int newParallelism) {
+        // first collect all weights
+        long weightsSum = Arrays.stream(keyGroupWeights).sum();
+
+        if (weightsSum <= 0) {
+            LOG.warn("No access counters for {}", jobVertexId);
+            return createKeyGroupPartitions(maxParallelism, newParallelism);
+        }
+
+        List<KeyGroupRange> bestSoFar = null;
+        long minSkewSoFar = Long.MAX_VALUE;
+        // Brute force generate all potential partitionings
+        PartitioningGenerator partitioningGenerator =
+                new PartitioningGenerator(maxParallelism, newParallelism);
+        while (partitioningGenerator.hasNext()) {
+            List<KeyGroupRange> candidate = partitioningGenerator.next();
+            long skewOfCandidate = skewOfPartitioning(candidate, keyGroupWeights);
+            // System.out.println(candidate);
+            // System.out.println(skewOfCandidate);
+            if (skewOfCandidate < minSkewSoFar) {
+                minSkewSoFar = skewOfCandidate;
+                bestSoFar = candidate;
+            }
+        }
+
+        logDebug(bestSoFar, jobVertexId, keyGroupWeights);
+        return bestSoFar;
+    }
+
+    private static void logDebug(
+            List<KeyGroupRange> bestSoFar, JobVertexID jobVertexID, long[] keyGroupAccessCounters) {
+        LOG.warn(
+                "Selected partitioning = {} with skew = {} for jobVertexID = {}",
+                bestSoFar,
+                skewOfPartitioning(bestSoFar, keyGroupAccessCounters),
+                jobVertexID);
+        LOG.warn(
+                "Weights of said partitioning = {}",
+                partitioningToWeights(bestSoFar, keyGroupAccessCounters));
+    }
+
+    private static List<Long> partitioningToWeights(
+            List<KeyGroupRange> bestSoFar, long[] keyGroupAccessCounters) {
+        return bestSoFar.stream()
+                .map(keyGroupRange -> weightOfKeyGroup(keyGroupRange, keyGroupAccessCounters))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * This works by generating all combinations without repetitions
+     * (https://en.wikipedia.org/wiki/Combination) and then converting them to partitioning. Single
+     * combination int[] array represents borders between KeyGroupRanges.
+     */
+    private static class PartitioningGenerator implements Iterator<List<KeyGroupRange>> {
+        private final Iterator<List<KeyGroupRange>> allPartitionings;
+        private final int maxParallelism;
+
+        public PartitioningGenerator(int maxParallelism, int newParallelism) {
+            this.maxParallelism = maxParallelism;
+            List<int[]> combinations = generateCombinations(maxParallelism - 1, newParallelism - 1);
+            allPartitionings =
+                    combinations.stream()
+                            .map(this::combinationToPartitioning)
+                            .collect(Collectors.toList())
+                            .iterator();
+        }
+
+        private List<KeyGroupRange> combinationToPartitioning(int[] combination) {
+            // System.out.println(Arrays.toString(combination));
+
+            List<KeyGroupRange> partitioning = new ArrayList<>();
+            int startOfKeyGroup = 0;
+            for (int endOfKeyGroup : combination) {
+                partitioning.add(new KeyGroupRange(startOfKeyGroup, endOfKeyGroup));
+                startOfKeyGroup = endOfKeyGroup + 1;
+            }
+            partitioning.add(new KeyGroupRange(startOfKeyGroup, maxParallelism - 1));
+            // System.out.println(partitioning);
+
+            return partitioning;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return allPartitionings.hasNext();
+        }
+
+        @Override
+        public List<KeyGroupRange> next() {
+            return allPartitionings.next();
+        }
+
+        private static void helper(
+                List<int[]> combinations, int data[], int start, int end, int index) {
+            if (index == data.length) {
+                int[] combination = data.clone();
+                combinations.add(combination);
+            } else if (start <= end) {
+                data[index] = start;
+                helper(combinations, data, start + 1, end, index + 1);
+                helper(combinations, data, start + 1, end, index);
+            }
+        }
+
+        /** copied pasted from * https://www.baeldung.com/java-combinations-algorithm. */
+        public static List<int[]> generateCombinations(int n, int r) {
+            checkState(n >= r);
+            List<int[]> combinations = new ArrayList<>();
+            helper(combinations, new int[r], 0, n - 1, 0);
+            return combinations;
+        }
+    }
+
+    static long skewOfPartitioning(
+            List<KeyGroupRange> partitioning, long[] keyGroupAccessCounters) {
+        long minWeight = Long.MAX_VALUE;
+        long maxWeight = 0;
+        for (KeyGroupRange keyGroupRange : partitioning) {
+            long weight = weightOfKeyGroup(keyGroupRange, keyGroupAccessCounters);
+            minWeight = Math.min(minWeight, weight);
+            maxWeight = Math.max(maxWeight, weight);
+        }
+        return maxWeight - minWeight;
+    }
+
+    private static long weightOfKeyGroup(KeyGroupRange keyGroupRange, long[] weights) {
+        long weight = 0;
+        for (int i = keyGroupRange.getStartKeyGroup(); i <= keyGroupRange.getEndKeyGroup(); i++) {
+            weight += weights[i];
+        }
+        return weight;
+    }
+
+    private static long[] collectKeyGroupWeights(TaskStateAssignment taskStateAssignment) {
+        long[] keyGroupWeights =
+                new long[taskStateAssignment.executionJobVertex.getMaxParallelism()];
+
+        for (OperatorState operatorState : taskStateAssignment.oldState.values()) {
+            addCountersFromOperator(keyGroupWeights, operatorState);
+            LOG.warn(
+                    "keyGroupWeights = {} after OperatorID {} for JobVertexId {}",
+                    Arrays.toString(keyGroupWeights),
+                    operatorState.getOperatorID(),
+                    taskStateAssignment.executionJobVertex.getJobVertexId());
+        }
+
+        return keyGroupWeights;
+    }
+
+    private static void addCountersFromOperator(
+            long[] keyGroupAccessCounters, OperatorState operatorState) {
+        int keyGroupOffset = 0;
+        for (int subTaskId = 0; subTaskId < operatorState.getParallelism(); subTaskId++) {
+            OperatorSubtaskState subtaskState = operatorState.getState(subTaskId);
+            if (subtaskState == null) {
+                LOG.error("THIS SHOULD NOT HAPPEN!");
+                throw new IllegalStateException("THIS SHOULD NOT HAPPEN!");
+                // continue;
+            }
+            KeyGroupAccessCountersDescriptor keyGroupAccessCountersDescriptor =
+                    subtaskState.getKeyGroupAccessCounter();
+            long[] subtaskKeyGroupAccessCounters =
+                    keyGroupAccessCountersDescriptor.getKeyGroupAccessCounter();
+            for (int i = 0; i < subtaskKeyGroupAccessCounters.length; i++) {
+                keyGroupAccessCounters[keyGroupOffset++] += subtaskKeyGroupAccessCounters[i];
+            }
+        }
     }
 
     private void assignTaskStateToExecutionJobVertices(TaskStateAssignment assignment) {
