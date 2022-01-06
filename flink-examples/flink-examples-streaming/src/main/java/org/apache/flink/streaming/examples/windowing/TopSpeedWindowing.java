@@ -51,7 +51,7 @@ public class TopSpeedWindowing {
         final ParameterTool params = ParameterTool.fromArgs(args);
 
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.getCheckpointConfig().setCheckpointStorage("s3:///anton-flink-test/checkpoints");
+        env.getCheckpointConfig().setCheckpointStorage("s3://anton-flink-test/checkpoints");
         env.getConfig().setGlobalJobParameters(params);
 
         @SuppressWarnings({"rawtypes", "serial"})
