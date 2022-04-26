@@ -287,13 +287,6 @@ public class MiniCluster implements AutoCloseableAsync {
                     miniClusterConfiguration.getRpcServiceSharing() == RpcServiceSharing.SHARED;
 
             try {
-                workingDirectory =
-                        WorkingDirectory.create(
-                                ClusterEntrypointUtils.generateWorkingDirectoryFile(
-                                        configuration,
-                                        Optional.empty(),
-                                        "minicluster_" + ResourceID.generate()));
-
                 initializeIOFormatClasses(configuration);
 
                 rpcSystem = RpcSystem.load(configuration);
