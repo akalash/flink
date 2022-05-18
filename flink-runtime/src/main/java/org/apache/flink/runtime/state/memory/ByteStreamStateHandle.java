@@ -41,13 +41,12 @@ public class ByteStreamStateHandle implements StreamStateHandle {
      */
     private final String handleName;
 
-    private final PhysicalStateHandleID physicalID;
+    private final PhysicalStateHandleID physicalID = null;
 
     /** Creates a new ByteStreamStateHandle containing the given data. */
     public ByteStreamStateHandle(String handleName, byte[] data) {
         this.handleName = Preconditions.checkNotNull(handleName);
         this.data = Preconditions.checkNotNull(data);
-        this.physicalID = new PhysicalStateHandleID(handleName);
     }
 
     @Override
